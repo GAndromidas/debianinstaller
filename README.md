@@ -30,7 +30,7 @@ This script automates the setup of a Debian-based system (Ubuntu, Pop!_OS, Debia
 
 ## Usage
 1. Clone this repository to your local machine.
-2. Run the script with elevated privileges: `./install.sh`.
+2. Run the script: `./install.sh`.
 3. Follow the prompts and instructions provided by the script.
 
 ## Notes
