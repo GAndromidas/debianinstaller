@@ -7,6 +7,8 @@ desktop_programs=(
     btop
     cmatrix
     curl
+    exa
+    fail2ban
     fastboot
     ffmpeg
     git
@@ -33,6 +35,7 @@ server_programs=(
     btop
     cmatrix
     curl
+    exa
     fail2ban
     git
     hwinfo
@@ -42,6 +45,7 @@ server_programs=(
     speedtest-cli
     samba
     ranger
+    ufw
     xdg-user-dirs
     zoxide
     zsh
