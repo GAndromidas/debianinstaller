@@ -24,8 +24,8 @@ alias update='sudo apt update && sudo apt upgrade'
 alias clean='sudo apt autoremove && sudo apt clean'
 alias cache='rm -rf ~/.cache/*'
 alias microcode='grep . /sys/devices/system/cpu/vulnerabilities/*'
-alias sr='sudo reboot'
-alias ss='sudo poweroff'
+alias sr='sudo systemctl reboot'
+alias ss='sudo systemctl poweroff'
 alias jctl='journalctl -p 3 -xb'
 
 # Replace ls with eza
