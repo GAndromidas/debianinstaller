@@ -138,9 +138,9 @@ install_starship() {
 # Function to install programs
 install_programs() {
     print_info "Installing Programs..."
-    (cd "$HOME/debianinstaller/scripts" && ./install_programs.sh)
+    (cd "$HOME/debianinstaller/scripts" && .programs.sh)
     # Install fastfetch from the specific script
-    (cd "$HOME/debianinstaller/scripts" && ./install_fastfetch.sh)
+    (cd "$HOME/debianinstaller/scripts" && ./fastfetch.sh)
     print_success "Programs installed successfully."
 }
 
