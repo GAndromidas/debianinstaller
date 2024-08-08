@@ -1,31 +1,5 @@
 #!/bin/bash
 
-# Detect the distribution
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    DISTRO="${ID}"
-else
-    echo "Unable to detect the distribution."
-    exit 1
-fi
-
-# Determine the correct package name based on the distribution
-case "$DISTRO" in
-    debian)
-        PACKAGE_NAME="exa"
-        ;;
-    ubuntu)
-        PACKAGE_NAME="eza"
-        ;;
-    popos)
-        PACKAGE_NAME="eza"
-        ;;
-    *)
-        echo "Unsupported distribution: $DISTRO"
-        exit 1
-        ;;
-esac
-
 # Desktop programs
 desktop_programs=(
     adb
@@ -33,7 +7,7 @@ desktop_programs=(
     btop
     cmatrix
     curl
-    "$PACKAGE_NAME"
+    eza
     fail2ban
     fastboot
     ffmpeg
@@ -60,7 +34,7 @@ server_programs=(
     btop
     cmatrix
     curl
-    "$PACKAGE_NAME"
+    eza
     fail2ban
     git
     hwinfo
