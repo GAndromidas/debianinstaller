@@ -1,5 +1,31 @@
 #!/bin/bash
 
+# Detect the distribution
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    DISTRO="${ID}"
+else
+    echo "Unable to detect the distribution."
+    exit 1
+fi
+
+# Determine the correct package name based on the distribution
+case "$DISTRO" in
+    debian)
+        PACKAGE_NAME="exa"
+        ;;
+    ubuntu)
+        PACKAGE_NAME="eza"
+        ;;
+    popos)
+        PACKAGE_NAME="eza"
+        ;;
+    *)
+        echo "Unsupported distribution: $DISTRO"
+        exit 1
+        ;;
+esac
+
 # Desktop programs
 desktop_programs=(
     adb
@@ -7,7 +33,7 @@ desktop_programs=(
     btop
     cmatrix
     curl
-    eza
+    "$PACKAGE_NAME"
     fail2ban
     fastboot
     ffmpeg
@@ -27,7 +53,6 @@ desktop_programs=(
     ufw
     vlc
     zoxide
-    zsh
 )
 
 # Server programs
@@ -35,7 +60,7 @@ server_programs=(
     btop
     cmatrix
     curl
-    eza
+    "$PACKAGE_NAME"
     fail2ban
     git
     hwinfo
@@ -48,14 +73,13 @@ server_programs=(
     ufw
     xdg-user-dirs
     zoxide
-    zsh
 )
 
 # Function to install programs for Desktop environment
 install_desktop_programs() {
     echo "Installing programs for Desktop environment..."
-    sudo apt update
-    sudo apt install -y "${desktop_programs[@]}"
+    sudo apt-get update
+    sudo apt-get install -y "${desktop_programs[@]}"
     if [ $? -eq 0 ]; then
         echo "Desktop programs installed successfully."
     else
@@ -67,8 +91,8 @@ install_desktop_programs() {
 # Function to install programs for Server environment
 install_server_programs() {
     echo "Installing programs for Server environment..."
-    sudo apt update
-    sudo apt install -y "${server_programs[@]}"
+    sudo apt-get update
+    sudo apt-get install -y "${server_programs[@]}"
     if [ $? -eq 0 ]; then
         echo "Server programs installed successfully."
     else
@@ -78,14 +102,11 @@ install_server_programs() {
 }
 
 # Main script
-
 echo "Welcome to the program installer script."
 echo "Choose an option:"
 echo "1. Desktop"
 echo "2. Server"
-
 read -p "Enter your choice (1 or 2): " choice
-
 case $choice in
     1)
         install_desktop_programs
@@ -98,4 +119,3 @@ case $choice in
         exit 1
         ;;
 esac
-

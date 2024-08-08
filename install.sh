@@ -141,6 +141,8 @@ install_programs() {
     (cd "$HOME/debianinstaller/scripts" && ./programs.sh)
     # Install fastfetch from the specific script
     (cd "$HOME/debianinstaller/scripts" && ./fastfetch.sh)
+    # Install fail2ban from the specific script
+    (cd "$HOME/debianinstaller/scripts" && ./fail2ban.sh)
     print_success "Programs installed successfully."
 }
 
