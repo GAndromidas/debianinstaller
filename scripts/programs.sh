@@ -7,7 +7,7 @@ desktop_programs=(
     btop
     cmatrix
     curl
-    exa
+    eza
     fail2ban
     fastboot
     ffmpeg
@@ -35,7 +35,7 @@ server_programs=(
     btop
     cmatrix
     curl
-    exa
+    eza
     fail2ban
     git
     hwinfo
