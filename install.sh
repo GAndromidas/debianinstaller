@@ -4,6 +4,19 @@
 # Description: Script for setting up a Debian-based system (Ubuntu, Pop!_OS, Debian) with various configurations and installations.
 # Author: George Andromidas
 
+# ASCII art
+clear
+echo -e "${CYAN}"
+cat << "EOF"
+ _____       _     _              ___           _        _ _           
+|  __ \     | |   (_)            |_ _|_ __  ___| |_ __ _| | | ___ _ __ 
+| |  | | ___| |__  _  __ _ _ __   | || '_ \/ __| __/ _` | | |/ _ \ '__|
+| |  | |/ _ \ '_ \| |/ _` | '_ \  | || | | \__ \ || (_| | | |  __/ |   
+| |__| |  __/ |_) | | (_| | | | |_| || | | |__) \__\__,_|_|_|\___|_|   
+|_____/ \___|_.__/|_|\__,_|_| |_(_)_||_| |_|___/
+
+EOF
+
 # Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
