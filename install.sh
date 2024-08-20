@@ -162,15 +162,22 @@ install_programs() {
 # Function to install multiple Nerd Fonts
 install_nerd_fonts() {
     print_info "Installing Nerd Fonts..."
+
+    # Create the fonts directory if it doesn't exist
     mkdir -p ~/.local/share/fonts
-    fonts=("Hack" "FiraCode" "JetBrainsMono" "Noto")
-    for font in "${fonts[@]}"; do
-        wget -O "$font.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/v2.1.0/$font.zip"
-        unzip -o "$font.zip" -d ~/.local/share/fonts/
-        rm "$font.zip"
-    done
-    fc-cache -fv
-    print_success "Nerd Fonts installed successfully."
+
+    # Download and install JetBrainsMono Nerd Font
+    wget -P ~/.local/share/fonts https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/JetBrainsMono.zip \
+    && cd ~/.local/share/fonts \
+    && unzip JetBrainsMono.zip \
+    && rm JetBrainsMono.zip \
+    && fc-cache -fv
+
+    if [ $? -eq 0 ]; then
+        print_success "JetBrainsMono Nerd Font installed successfully."
+    else
+        print_error "Failed to install JetBrainsMono Nerd Font."
+    fi
 }
 
 # Function to enable services
