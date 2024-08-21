@@ -4,16 +4,20 @@
 # Description: Script for setting up a Debian-based system (Ubuntu, Pop!_OS, Debian) with various configurations and installations.
 # Author: George Andromidas
 
+# Get the directory of the script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
 # ASCII art
 clear
 echo -e "${CYAN}"
 cat << "EOF"
- _____       _     _              ___           _        _ _           
-|  __ \     | |   (_)            |_ _|_ __  ___| |_ __ _| | | ___ _ __ 
-| |  | | ___| |__  _  __ _ _ __   | || '_ \/ __| __/ _` | | |/ _ \ '__|
-| |  | |/ _ \ '_ \| |/ _` | '_ \  | || | | \__ \ || (_| | | |  __/ |   
-| |__| |  __/ |_) | | (_| | | | |_| || | | |__) \__\__,_|_|_|\___|_|   
-|_____/ \___|_.__/|_|\__,_|_| |_(_)_||_| |_|___/
+  _____       _     _             _____           _        _ _           
+ |  __ \     | |   (_)           |_   _|         | |      | | |          
+ | |  | | ___| |__  _  __ _ _ __   | |  _ __  ___| |_ __ _| | | ___ _ __ 
+ | |  | |/ _ \ '_ \| |/ _` | '_ \  | | | '_ \/ __| __/ _` | | |/ _ \ '__|
+ | |__| |  __/ |_) | | (_| | | | |_| |_| | | \__ \ || (_| | | |  __/ |   
+ |_____/ \___|_.__/|_|\__,_|_| |_|_____|_| |_|___/\__\__,_|_|_|\___|_| 
 
 EOF
 
@@ -44,18 +48,19 @@ print_error() {
 # Check distribution type
 DISTRO=$(lsb_release -si)
 
+# Function to handle errors
+handle_error() {
+    print_error "$1"
+    exit 1
+}
+
 # Function to set the hostname (only for Pop!_OS)
 set_hostname() {
-    if [ "$DISTRO" == "Pop" ]; then
+    if [ "$DISTRO" == "Pop!_OS" ]; then
         print_info "Please enter the desired hostname for Pop!_OS:"
         read -p "Hostname: " hostname
-        sudo hostnamectl set-hostname "$hostname"
-        if [ $? -ne 0 ]; then
-            print_error "Error: Failed to set the hostname."
-            exit 1
-        else
-            print_success "Hostname set to $hostname successfully."
-        fi
+        sudo hostnamectl set-hostname "$hostname" || handle_error "Error: Failed to set the hostname."
+        print_success "Hostname set to $hostname successfully."
     else
         print_warning "Skipping hostname configuration for $DISTRO."
     fi
@@ -64,35 +69,30 @@ set_hostname() {
 # Function to enable asterisks for password in sudoers
 enable_asterisks_sudo() {
     print_info "Enabling password feedback in sudoers..."
-    echo "Defaults pwfeedback" | sudo tee -a /etc/sudoers.d/pwfeedback > /dev/null
+    echo "Defaults pwfeedback" | sudo tee -a /etc/sudoers.d/pwfeedback > /dev/null || handle_error "Error: Failed to enable password feedback in sudoers."
     print_success "Password feedback enabled in sudoers."
 }
 
 # Function to update the system
 update_system() {
     print_info "Updating system..."
-    sudo apt update
-    sudo apt upgrade -y
+    sudo apt-get update || handle_error "Error: Failed to update package list."
+    sudo apt-get upgrade -y || handle_error "Error: Failed to upgrade packages."
     print_success "System updated successfully."
 }
 
 # Function to install kernel headers
 install_kernel_headers() {
     print_info "Installing kernel headers..."
-    sudo apt install -y linux-headers-$(uname -r) build-essential
-    if [ $? -ne 0 ]; then
-        print_error "Error: Failed to install kernel headers."
-        exit 1
-    else
-        print_success "Kernel headers installed successfully."
-    fi
+    sudo apt-get install -y linux-headers-$(uname -r) build-essential || handle_error "Error: Failed to install kernel headers."
+    print_success "Kernel headers installed successfully."
 }
 
 # Function to install media codecs (only for Ubuntu and Pop!_OS)
 install_media_codecs() {
-    if [ "$DISTRO" == "Ubuntu" ] || [ "$DISTRO" == "Pop" ]; then
+    if [ "$DISTRO" == "Ubuntu" ] || [ "$DISTRO" == "Pop!_OS" ]; then
         print_info "Installing media codecs..."
-        sudo apt install -y ubuntu-restricted-extras
+        sudo apt-get install -y ubuntu-restricted-extras || handle_error "Error: Failed to install media codecs."
         print_success "Media codecs installed successfully."
     else
         print_warning "Skipping media codecs installation for $DISTRO."
@@ -102,82 +102,68 @@ install_media_codecs() {
 # Function to install ZSH and Oh-My-ZSH
 install_zsh() {
     print_info "Installing ZSH and Oh-My-ZSH..."
-    sudo apt install -y zsh
-    yes | sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    sudo apt-get install -y zsh || handle_error "Error: Failed to install ZSH."
+    yes | sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" || handle_error "Error: Failed to install Oh-My-ZSH."
     print_success "ZSH and Oh-My-ZSH installed successfully."
 }
 
 # Function to install ZSH plugins
 install_zsh_plugins() {
     print_info "Installing ZSH plugins..."
-    git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+    mkdir -p ~/.oh-my-zsh/custom/plugins
+    git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions || handle_error "Error: Failed to install zsh-autosuggestions."
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting || handle_error "Error: Failed to install zsh-syntax-highlighting."
     print_success "ZSH plugins installed successfully."
 }
 
 # Function to change shell to ZSH
 change_shell_to_zsh() {
     print_info "Changing shell to ZSH..."
-    sudo chsh -s "$(which zsh)" $USER
+    sudo chsh -s "$(which zsh)" $USER || handle_error "Error: Failed to change shell to ZSH."
     print_success "Shell changed to ZSH."
 }
 
 # Function to move .zshrc
 move_zshrc() {
     print_info "Copying .zshrc to Home Folder..."
-    cp "$HOME/debianinstaller/configs/.zshrc" "$HOME/"
-    sed -i '/^plugins=/c\plugins=(git zsh-autosuggestions zsh-syntax-highlighting)' "$HOME/.zshrc"
+    cp "$HOME/debianinstaller/configs/.zshrc" "$HOME/" || handle_error "Error: Failed to copy .zshrc."
+    sed -i '/^plugins=/c\plugins=(git zsh-autosuggestions zsh-syntax-highlighting)' "$HOME/.zshrc" || handle_error "Error: Failed to configure .zshrc."
     print_success ".zshrc copied and configured successfully."
 }
 
 # Function to install Starship prompt
 install_starship() {
     print_info "Installing Starship prompt..."
-    curl -sS https://starship.rs/install.sh | sh -s -- -y
-    if [ $? -eq 0 ]; then
-        mkdir -p "$HOME/.config"
-        if [ -f "$HOME/debianinstaller/configs/starship.toml" ]; then
-            mv "$HOME/debianinstaller/configs/starship.toml" "$HOME/.config/starship.toml"
-            print_success "Starship prompt installed successfully."
-            print_success "starship.toml moved to $HOME/.config/"
-        else
-            print_warning "starship.toml not found in $HOME/debianinstaller/configs/"
-        fi
+    curl -sS https://starship.rs/install.sh | sh -s -- -y || handle_error "Error: Starship prompt installation failed."
+    mkdir -p "$HOME/.config"
+    if [ -f "$HOME/debianinstaller/configs/starship.toml" ]; then
+        mv "$HOME/debianinstaller/configs/starship.toml" "$HOME/.config/starship.toml" || handle_error "Error: Failed to move starship.toml."
+        print_success "Starship prompt installed successfully."
+        print_success "starship.toml moved to $HOME/.config/"
     else
-        print_error "Starship prompt installation failed."
+        print_warning "starship.toml not found in $HOME/debianinstaller/configs/"
     fi
 }
 
 # Function to install programs
 install_programs() {
     print_info "Installing Programs..."
-    (cd "$HOME/debianinstaller/scripts" && ./programs.sh)
-    # Install fastfetch from the specific script
-    (cd "$HOME/debianinstaller/scripts" && ./fastfetch.sh)
-    # Install fail2ban from the specific script
-    (cd "$HOME/debianinstaller/scripts" && ./fail2ban.sh)
+    (cd "$HOME/debianinstaller/scripts" && ./programs.sh) || handle_error "Error: Failed to install programs."
+    (cd "$HOME/debianinstaller/scripts" && ./fastfetch.sh) || handle_error "Error: Failed to install fastfetch."
+    (cd "$HOME/debianinstaller/scripts" && ./fail2ban.sh) || handle_error "Error: Failed to install fail2ban."
     print_success "Programs installed successfully."
 }
 
 # Function to install multiple Nerd Fonts
 install_nerd_fonts() {
     print_info "Installing Nerd Fonts..."
-
-    # Create the fonts directory if it doesn't exist
     mkdir -p ~/.local/share/fonts
-
-    # Download and install JetBrainsMono Nerd Font
-    wget -P ~/.local/share/fonts https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/JetBrainsMono.zip \
-    && cd ~/.local/share/fonts \
-    && unzip JetBrainsMono.zip \
-    && rm JetBrainsMono.zip \
-    && fc-cache -fv
-
-    if [ $? -eq 0 ]; then
-        print_success "JetBrainsMono Nerd Font installed successfully."
-    else
-        print_error "Failed to install JetBrainsMono Nerd Font."
-    fi
+    wget -P ~/.local/share/fonts https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/JetBrainsMono.zip || handle_error "Error: Failed to download JetBrainsMono."
+    cd ~/.local/share/fonts || handle_error "Error: Failed to change directory to fonts."
+    unzip JetBrainsMono.zip || handle_error "Error: Failed to unzip JetBrainsMono."
+    rm JetBrainsMono.zip || handle_error "Error: Failed to remove JetBrainsMono.zip."
+    fc-cache -fv || handle_error "Error: Failed to refresh font cache."
+    print_success "JetBrainsMono Nerd Font installed successfully."
 }
 
 # Function to enable services
@@ -190,7 +176,7 @@ enable_services() {
         "ufw"
     )
     for service in "${services[@]}"; do
-        sudo systemctl enable --now "$service"
+        sudo systemctl enable --now "$service" || handle_error "Error: Failed to enable service $service."
     done
     print_success "Services enabled successfully."
 }
@@ -198,22 +184,24 @@ enable_services() {
 # Function to create fastfetch config
 create_fastfetch_config() {
     print_info "Creating fastfetch config..."
-    fastfetch --gen-config
-    print_success "fastfetch config created successfully."
+    fastfetch --gen-config || handle_error "Error: Failed to create fastfetch config."
     print_info "Copying fastfetch config from repository to ~/.config/fastfetch/..."
-    cp "$HOME/debianinstaller/configs/config.jsonc" "$HOME/.config/fastfetch/config.jsonc"
+    cp "$HOME/debianinstaller/configs/config.jsonc" "$HOME/.config/fastfetch/config.jsonc" || handle_error "Error: Failed to copy fastfetch config."
     print_success "fastfetch config copied successfully."
 }
 
 # Function to configure UFW firewall
 configure_ufw() {
     print_info "Configuring UFW..."
-    sudo apt install -y ufw
-    sudo ufw enable
-    sudo ufw allow ssh
+    if ! dpkg -l | grep -q ufw; then
+        print_info "Installing UFW..."
+        sudo apt-get install -y ufw || handle_error "Error: Failed to install UFW."
+    fi
+    sudo ufw enable || handle_error "Error: Failed to enable UFW."
+    sudo ufw allow ssh || handle_error "Error: Failed to allow SSH through UFW."
     if dpkg -l | grep -q kdeconnect; then
-        sudo ufw allow 1714:1764/tcp
-        sudo ufw allow 1714:1764/udp
+        sudo ufw allow 1714:1764/tcp || handle_error "Error: Failed to allow KDE Connect TCP."
+        sudo ufw allow 1714:1764/udp || handle_error "Error: Failed to allow KDE Connect UDP."
     fi
     print_success "UFW configured successfully."
 }
@@ -221,16 +209,23 @@ configure_ufw() {
 # Function to clear unused packages and cache
 clear_unused_packages_cache() {
     print_info "Clearing Unused Packages and Cache..."
-    sudo apt autoremove -y
-    sudo apt clean
+    sudo apt-get autoremove -y || handle_error "Error: Failed to clear unused packages."
+    sudo apt-get clean || handle_error "Error: Failed to clean package cache."
     print_success "Unused packages and cache cleared successfully."
 }
 
 # Function to delete the debianinstaller folder
 delete_debianinstaller_folder() {
     print_info "Deleting Debianinstaller Folder..."
-    sudo rm -rf "$HOME/debianinstaller"
+    sudo rm -rf "$HOME/debianinstaller" || handle_error "Error: Failed to delete Debianinstaller folder."
     print_success "Debianinstaller folder deleted successfully."
+}
+
+# Function to clean up temporary files
+cleanup() {
+    print_info "Cleaning up temporary files..."
+    rm -rf "$HOME/debianinstaller/temp"  # Example: remove a temp directory if it exists
+    print_success "Cleanup completed successfully."
 }
 
 # Function to reboot system
@@ -256,7 +251,7 @@ reboot_system() {
 
     if [[ "$confirm_reboot" == "y" ]]; then
         print_info "Rebooting now..."
-        sudo reboot
+        sudo reboot || handle_error "Error: Failed to reboot the system."
     else
         print_warning "Reboot canceled. You can reboot manually later by typing 'sudo reboot'."
     fi
@@ -280,4 +275,9 @@ create_fastfetch_config
 configure_ufw
 clear_unused_packages_cache
 delete_debianinstaller_folder
+
+# Perform cleanup before reboot
+cleanup
+
+# Reboot system
 reboot_system
