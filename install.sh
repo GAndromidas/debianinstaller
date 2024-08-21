@@ -257,6 +257,20 @@ reboot_system() {
     fi
 }
 
+# Function to check for required dependencies
+check_dependencies() {
+    local dependencies=("lsb_release" "apt-get" "curl" "git" "unzip" "wget")
+    for cmd in "${dependencies[@]}"; do
+        if ! command -v "$cmd" &> /dev/null; then
+            handle_error "Error: $cmd is not installed. Please install it before running the script."
+        fi
+    done
+    print_success "All required dependencies are installed."
+}
+
+# Call the dependency check function at the start
+check_dependencies
+
 # Call functions in the desired order
 set_hostname
 enable_asterisks_sudo
