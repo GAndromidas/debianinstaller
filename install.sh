@@ -73,8 +73,21 @@ set_hostname() {
     if [ "$DISTRO" == "Pop!_OS" ]; then
         print_info "Please enter the desired hostname for Pop!_OS:"
         read -p "Hostname: " hostname
+        # Check if hostname is not empty
+        if [ -z "$hostname" ]; then
+            print_error "Hostname cannot be empty."
+            return 1
+        fi
+        # Set the hostname
         sudo hostnamectl set-hostname "$hostname" || handle_error "Error: Failed to set the hostname."
-        print_success "Hostname set to $hostname successfully."
+        
+        # Verify the hostname was set correctly
+        current_hostname=$(hostname)
+        if [ "$current_hostname" == "$hostname" ]; then
+            print_success "Hostname set to $hostname successfully."
+        else
+            print_error "Error: Hostname was not set correctly."
+        fi
     else
         print_warning "Skipping hostname configuration for $DISTRO."
     fi
