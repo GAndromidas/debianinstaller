@@ -92,6 +92,23 @@ update_system() {
     print_info "Updating system..."
     sudo apt-get update || handle_error "Error: Failed to update package list."
     sudo apt-get upgrade -y || handle_error "Error: Failed to upgrade packages."
+
+    # Check for Snap and refresh packages
+    if command -v snap &> /dev/null; then
+        print_info "Refreshing Snap packages..."
+        sudo snap refresh || handle_error "Error: Failed to refresh Snap packages."
+    else
+        print_warning "No Snap package manager found. Skipping Snap refresh."
+    fi
+
+    # Check for Flatpak and refresh packages
+    if command -v flatpak &> /dev/null; then
+        print_info "Refreshing Flatpak packages..."
+        flatpak update -y || handle_error "Error: Failed to refresh Flatpak packages."
+    else
+        print_warning "No Flatpak package manager found. Skipping Flatpak refresh."
+    fi
+
     print_success "System updated successfully."
 }
 
