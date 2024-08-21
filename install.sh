@@ -55,7 +55,7 @@ handle_error() {
 
 # Function to check for required dependencies and install them if missing
 check_dependencies() {
-    local dependencies=("lsb-release" "curl" "git" "unzip" "wget" "fastfetch" "zsh")
+    local dependencies=("lsb-release" "curl" "git" "unzip" "wget")
     for cmd in "${dependencies[@]}"; do
         if ! command -v "$cmd" &> /dev/null; then
             print_warning "$cmd is not installed. Installing..."
