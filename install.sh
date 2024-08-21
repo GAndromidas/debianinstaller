@@ -20,21 +20,6 @@ cat << "EOF"
 
 EOF
 
-# Function to check for required dependencies and install them if missing
-check_dependencies() {
-    local dependencies=("lsb-release" "curl" "git" "unzip" "wget" "fastfetch" "zsh")
-    for cmd in "${dependencies[@]}"; do
-        if ! command -v "$cmd" &> /dev/null; then
-            print_warning "$cmd is not installed. Installing..."
-            sudo apt-get install -y "$cmd" || handle_error "Error: Failed to install $cmd."
-        fi
-    done
-    print_success "All required dependencies are installed."
-}
-
-# Call the dependency check function at the start
-check_dependencies
-
 # Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -67,6 +52,21 @@ handle_error() {
     print_error "$1"
     exit 1
 }
+
+# Function to check for required dependencies and install them if missing
+check_dependencies() {
+    local dependencies=("lsb-release" "curl" "git" "unzip" "wget" "fastfetch" "zsh")
+    for cmd in "${dependencies[@]}"; do
+        if ! command -v "$cmd" &> /dev/null; then
+            print_warning "$cmd is not installed. Installing..."
+            sudo apt-get install -y "$cmd" || handle_error "Error: Failed to install $cmd."
+        fi
+    done
+    print_success "All required dependencies are installed."
+}
+
+# Call the dependency check function at the start
+check_dependencies
 
 # Function to set the hostname (only for Pop!_OS)
 set_hostname() {
