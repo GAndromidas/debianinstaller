@@ -7,7 +7,6 @@
 # Get the directory of the script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-
 # ASCII art
 clear
 echo -e "${CYAN}"
@@ -20,6 +19,21 @@ cat << "EOF"
  |_____/ \___|_.__/|_|\__,_|_| |_|_____|_| |_|___/\__\__,_|_|_|\___|_| 
 
 EOF
+
+# Function to check for required dependencies and install them if missing
+check_dependencies() {
+    local dependencies=("lsb-release" "curl" "git" "unzip" "wget" "fastfetch" "zsh")
+    for cmd in "${dependencies[@]}"; do
+        if ! command -v "$cmd" &> /dev/null; then
+            print_warning "$cmd is not installed. Installing..."
+            sudo apt-get install -y "$cmd" || handle_error "Error: Failed to install $cmd."
+        fi
+    done
+    print_success "All required dependencies are installed."
+}
+
+# Call the dependency check function at the start
+check_dependencies
 
 # Color codes
 RED='\033[0;31m'
@@ -256,20 +270,6 @@ reboot_system() {
         print_warning "Reboot canceled. You can reboot manually later by typing 'sudo reboot'."
     fi
 }
-
-# Function to check for required dependencies
-check_dependencies() {
-    local dependencies=("lsb_release" "apt-get" "curl" "git" "unzip" "wget")
-    for cmd in "${dependencies[@]}"; do
-        if ! command -v "$cmd" &> /dev/null; then
-            handle_error "Error: $cmd is not installed. Please install it before running the script."
-        fi
-    done
-    print_success "All required dependencies are installed."
-}
-
-# Call the dependency check function at the start
-check_dependencies
 
 # Call functions in the desired order
 set_hostname
