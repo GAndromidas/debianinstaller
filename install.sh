@@ -138,7 +138,7 @@ install_zsh_plugins() {
     mkdir -p ~/.oh-my-zsh/custom/plugins
 
     # Check if plugins are already installed
-    if [ -d "~/.oh-my-zsh/custom/plugins/zsh-autosuggestions" ] && [ -d "~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting" ]; then
+    if [ -d ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions ] && [ -d ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting ]; then
         print_warning "ZSH plugins are already installed. Skipping installation."
         return
     fi
@@ -147,6 +147,7 @@ install_zsh_plugins() {
     git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting || handle_error "Error: Failed to install zsh-syntax-highlighting."
     print_success "ZSH plugins installed successfully."
 }
+
 
 # Function to change shell to ZSH
 change_shell_to_zsh() {
