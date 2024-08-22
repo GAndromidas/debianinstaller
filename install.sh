@@ -203,7 +203,6 @@ enable_services() {
     print_info "Enabling Services..."
     local services=(
         "fstrim.timer"
-        "bluetooth"
         "ssh"
         "ufw"
     )
