@@ -85,7 +85,7 @@ show_menu() {
 
 # Function to check for required dependencies and install them if missing
 check_dependencies() {
-    local dependencies=("lsb-release" "curl" "git" "unzip" "wget")
+    local dependencies=(lsb-release curl git figlet unzip wget)
     for cmd in "${dependencies[@]}"; do
         if ! command -v "$cmd" &> /dev/null; then
             print_warning "$cmd is not installed. Installing..."
@@ -209,8 +209,6 @@ install_starship() {
 install_programs() {
     print_info "Installing Programs..."
     (cd "$HOME/debianinstaller/scripts" && "$SCRIPT_DIR/scripts/programs.sh" "$FLAG") || handle_error "Error: Failed to install programs."
-    (cd "$HOME/debianinstaller/scripts" && "$SCRIPT_DIR/scripts/fastfetch.sh") || handle_error "Error: Failed to install fastfetch."
-    (cd "$HOME/debianinstaller/scripts" && "$SCRIPT_DIR/scripts/fail2ban.sh") || handle_error "Error: Failed to install fail2ban."
     print_success "Programs installed successfully."
 }
 
@@ -240,6 +238,13 @@ enable_services() {
     print_success "Services enabled successfully."
 }
 
+# Function to install Fastfetch
+install_fastfetch() {
+    print_info "Installing Fastfetch..."
+    (cd "$HOME/debianinstaller/scripts" && "$SCRIPT_DIR/scripts/fastfetch.sh") || handle_error "Error: Failed to install fastfetch."
+    print_success "Fastfetch installed successfully."
+}
+
 # Function to create fastfetch config
 create_fastfetch_config() {
     print_info "Creating fastfetch config..."
@@ -263,6 +268,25 @@ configure_ufw() {
         sudo ufw allow 1714:1764/udp || handle_error "Error: Failed to allow KDE Connect UDP."
     fi
     print_success "UFW configured successfully."
+}
+
+# Function to install Fail2Ban with confirmation
+install_fail2ban() {
+    echo -e "${CYAN}"
+    figlet "Fail2Ban"
+    echo -e "${NC}"
+
+    read -rp "Do you want to install Fail2Ban? (Y/n): " confirm_install
+    confirm_install="${confirm_install,,}"  # Convert to lowercase
+
+    # Default to 'y' if Enter is pressed
+    if [[ -z "$confirm_install" || "$confirm_install" == "y" ]]; then
+        print_info "Installing Fail2Ban..."
+        (cd "$HOME/debianinstaller/scripts" && "$SCRIPT_DIR/scripts/fail2ban.sh") || handle_error "Error: Failed to install fail2ban."
+        print_success "Fail2Ban installed successfully."
+    else
+        print_warning "Skipping Fail2Ban installation."
+    fi
 }
 
 # Function to clear unused packages and cache
@@ -334,8 +358,10 @@ move_zshrc
 install_starship
 install_nerd_fonts
 enable_services
+install_fastfetch
 create_fastfetch_config
 configure_ufw
+install_fail2ban
 clear_unused_packages_cache
 delete_debianinstaller_folder
 
