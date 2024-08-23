@@ -260,18 +260,44 @@ create_fastfetch_config() {
 
 # Function to configure UFW firewall
 configure_ufw() {
-    print_info "Configuring UFW..."
-    if ! dpkg -l | grep -q ufw; then
-        print_info "Installing UFW..."
-        sudo apt-get install -y ufw || handle_error "Error: Failed to install UFW."
+    print_info "Configuring Firewall..."
+    
+    if command -v ufw > /dev/null 2>&1; then
+        print_info "Using UFW for firewall configuration."
+
+        # Enable UFW
+        sudo ufw enable
+        
+        # Set default policies
+        sudo ufw default deny incoming
+        print_info "Default policy set to deny all incoming connections."
+        
+        sudo ufw default allow outgoing
+        print_info "Default policy set to allow all outgoing connections."
+        
+        # Allow SSH
+        if ! sudo ufw status | grep -q "22/tcp"; then
+            sudo ufw allow ssh
+            print_success "SSH allowed through UFW."
+        else
+            print_warning "SSH is already allowed. Skipping SSH service configuration."
+        fi
+
+        # Check if KDE Connect is installed
+        if dpkg -l | grep -q kdeconnect; then
+            # Allow specific ports for KDE Connect
+            sudo ufw allow 1714:1764/udp
+            sudo ufw allow 1714:1764/tcp
+            print_success "KDE Connect ports allowed through UFW."
+        else
+            print_warning "KDE Connect is not installed. Skipping KDE Connect service configuration."
+        fi
+
+        print_success "Firewall configured successfully."
+    else
+        print_error "UFW not found. Please install UFW."
+        return 1
     fi
-    sudo ufw enable || handle_error "Error: Failed to enable UFW."
-    sudo ufw allow ssh || handle_error "Error: Failed to allow SSH through UFW."
-    if dpkg -l | grep -q kdeconnect; then
-        sudo ufw allow 1714:1764/tcp || handle_error "Error: Failed to allow KDE Connect TCP."
-        sudo ufw allow 1714:1764/udp || handle_error "Error: Failed to allow KDE Connect UDP."
-    fi
-    print_success "UFW configured successfully."
 }
 
 # Function to install Fail2Ban with confirmation
