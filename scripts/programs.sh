@@ -35,18 +35,22 @@ desktop_programs=(
 
 # Server programs
 server_programs=(
+    apt-transport-https
     btop
+    ca-certificates
     cmatrix
     curl
     eza
     git
+    gnupg2
     hwinfo
     net-tools
     preload
+    ranger
+    samba
+    software-properties-common
     sl
     speedtest-cli
-    samba
-    ranger
     ufw
     xdg-user-dirs
     zoxide
@@ -78,9 +82,43 @@ install_server_programs() {
         for program in "${server_programs[@]}"; do
             echo -e "\033[34m- $program\033[0m"  # Blue color for program names
         done
+        install_docker  # Call the Docker, Portainer, and Watchtower installation function
+        install_casaos  # Call the CasaOS installation function after server programs installation
     else
         echo "Failed to install Server programs."
         exit 1
+    fi
+}
+
+# Function to install Docker, Portainer, and Watchtower
+install_docker() {
+    echo "Installing Docker..."
+    sudo apt-get install -y docker.io
+    echo "Installing Portainer..."
+    sudo docker volume create portainer_data
+    sudo docker run -d -p 9000:9000 --name portainer --restart always \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        -v portainer_data:/data portainer/portainer-ce
+    echo "Installing Watchtower..."
+    sudo docker run -d \
+        --name watchtower \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        containrrr/watchtower
+}
+
+# Function to install CasaOS
+install_casaos() {
+    echo -e "${CYAN}"
+    figlet "CasaOS"  # Display CasaOS banner
+    echo -e "${NC}"
+
+    read -p "Do you want to install CasaOS? (Y/n): " choice
+    choice=${choice:-y}  # Default to 'y' if no input is given
+    if [[ "$choice" =~ ^[Yy]$ ]]; then  # Check for 'Y' or 'y'
+        echo "Installing CasaOS..."
+        curl -fsSL https://get.casaos.io | sudo bash
+    else
+        echo "Skipping CasaOS installation."
     fi
 }
 
