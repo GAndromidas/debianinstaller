@@ -13,7 +13,6 @@ desktop_programs=(
     cmatrix
     curl
     eza
-    fail2ban
     fastboot
     ffmpeg
     git
@@ -40,7 +39,6 @@ server_programs=(
     cmatrix
     curl
     eza
-    fail2ban
     git
     hwinfo
     net-tools
