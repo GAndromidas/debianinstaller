@@ -314,6 +314,15 @@ reboot_system() {
     fi
 }
 
+# Add this at the beginning of the script to handle flags
+while getopts "d:s:" opt; do
+    case $opt in
+        d) FLAG="-d" ;;  # Set FLAG for desktop installation
+        s) FLAG="-s" ;;  # Set FLAG for server installation
+        *) handle_error "Invalid flag: -$OPTARG" ;;  # Handle invalid flags
+    esac
+done
+
 # Call the show_menu function at the start
 show_menu
 
