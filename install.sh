@@ -317,6 +317,10 @@ cleanup() {
 
 # Function to reboot system
 reboot_system() {
+    echo -e "${CYAN}"
+    figlet "Reboot System"
+    echo -e "${NC}"
+    
     print_info "Rebooting System..."
     printf "${YELLOW}Do you want to reboot now? (Y/n)${RESET} "
 
