@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Function to print error messages
+print_error() {
+    echo "Error: $1"
+}
+
 # Desktop programs
 desktop_programs=(
     adb
@@ -76,20 +81,21 @@ install_server_programs() {
 }
 
 # Main script
-echo "Welcome to the program installer script."
-echo "Choose an option:"
-echo "1. Desktop"
-echo "2. Server"
-read -p "Enter your choice (1 or 2): " choice
-case $choice in
-    1)
+# Get the flag from command line argument
+FLAG="$1"
+
+# Set programs to install based on installation mode
+case "$FLAG" in
+    "-d")
+        installation_mode="desktop"
         install_desktop_programs
         ;;
-    2)
+    "-s")
+        installation_mode="server"
         install_server_programs
         ;;
     *)
-        echo "Invalid choice. Please enter '1' or '2'."
+        print_error "Invalid flag. Exiting."
         exit 1
         ;;
 esac
