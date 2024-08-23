@@ -53,6 +53,21 @@ handle_error() {
     exit 1
 }
 
+# Function to install required dependencies
+install_dependencies() {
+    local dependencies=(lsb-release curl figlet git unzip wget)
+    for cmd in "${dependencies[@]}"; do
+        if ! command -v "$cmd" &> /dev/null; then
+            sudo apt-get install -y "$cmd" &> /dev/null || handle_error "Error: Failed to install $cmd."
+        fi
+    done
+    # Commenting out the success message to keep it silent
+    # print_success "All required dependencies are installed."
+}
+
+# Call the dependency check function at the start
+install_dependencies
+
 # Function to show installation menu
 show_menu() {
     echo -e "${CYAN}Select an installation option:${RESET}"
@@ -81,18 +96,6 @@ show_menu() {
             show_menu  # Show the menu again for invalid input
             ;;
     esac
-}
-
-# Function to check for required dependencies and install them if missing
-check_dependencies() {
-    local dependencies=(lsb-release curl git figlet unzip wget)
-    for cmd in "${dependencies[@]}"; do
-        if ! command -v "$cmd" &> /dev/null; then
-            print_warning "$cmd is not installed. Installing..."
-            sudo apt-get install -y "$cmd" || handle_error "Error: Failed to install $cmd."
-        fi
-    done
-    print_success "All required dependencies are installed."
 }
 
 # Function to enable asterisks for password in sudoers
@@ -146,6 +149,21 @@ install_media_codecs() {
     fi
 }
 
+# Function to install Starship prompt
+install_starship() {
+    print_info "Installing Starship prompt..."
+    print_info "This may take a few moments, please wait..."
+    curl -sS https://starship.rs/install.sh | sh -s -- -y || handle_error "Error: Starship prompt installation failed."
+    mkdir -p "$HOME/.config"
+    if [ -f "$HOME/debianinstaller/configs/starship.toml" ]; then
+        mv "$HOME/debianinstaller/configs/starship.toml" "$HOME/.config/starship.toml" || handle_error "Error: Failed to move starship.toml."
+        print_success "Starship prompt installed successfully."
+        print_success "starship.toml moved to $HOME/.config/"
+    else
+        print_warning "starship.toml not found in $HOME/debianinstaller/configs/"
+    fi
+}
+
 # Function to install ZSH and Oh-My-ZSH
 install_zsh() {
     # Check if Oh-My-Zsh is already installed
@@ -192,21 +210,6 @@ move_zshrc() {
     cp "$HOME/debianinstaller/configs/.zshrc" "$HOME/" || handle_error "Error: Failed to copy .zshrc."
     sed -i '/^plugins=/c\plugins=(git zsh-autosuggestions zsh-syntax-highlighting)' "$HOME/.zshrc" || handle_error "Error: Failed to configure .zshrc."
     print_success ".zshrc copied and configured successfully."
-}
-
-# Function to install Starship prompt
-install_starship() {
-    print_info "Installing Starship prompt..."
-    print_info "This may take a few moments, please wait..."
-    curl -sS https://starship.rs/install.sh | sh -s -- -y || handle_error "Error: Starship prompt installation failed."
-    mkdir -p "$HOME/.config"
-    if [ -f "$HOME/debianinstaller/configs/starship.toml" ]; then
-        mv "$HOME/debianinstaller/configs/starship.toml" "$HOME/.config/starship.toml" || handle_error "Error: Failed to move starship.toml."
-        print_success "Starship prompt installed successfully."
-        print_success "starship.toml moved to $HOME/.config/"
-    else
-        print_warning "starship.toml not found in $HOME/debianinstaller/configs/"
-    fi
 }
 
 # Function to install programs
@@ -377,19 +380,16 @@ reboot_system() {
 # Call the show_menu function at the start
 show_menu
 
-# Call the dependency check function at the start
-check_dependencies
-
 # Call functions in the desired order
 enable_asterisks_sudo
 update_system
 install_kernel_headers
 install_media_codecs
+install_starship
 install_zsh
 install_zsh_plugins
 change_shell_to_zsh
 move_zshrc
-install_starship
 install_nerd_fonts
 enable_services
 install_fastfetch
