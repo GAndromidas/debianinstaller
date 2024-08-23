@@ -64,11 +64,13 @@ show_menu() {
     case $choice in
         1)
             print_info "Starting Desktop Installation..."
-            "$SCRIPT_DIR/scripts/programs.sh" -d  # Call programs.sh with -d flag
+            FLAG="-d"  # Set FLAG for desktop installation
+            install_programs  # Call the install_programs function
             ;;
         2)
             print_info "Starting Server Installation..."
-            "$SCRIPT_DIR/scripts/programs.sh" -s  # Call programs.sh with -s flag
+            FLAG="-s"  # Set FLAG for server installation
+            install_programs  # Call the install_programs function
             ;;
         3)
             print_info "Exiting..."
@@ -314,15 +316,6 @@ reboot_system() {
     fi
 }
 
-# Add this at the beginning of the script to handle flags
-while getopts "d:s:" opt; do
-    case $opt in
-        d) FLAG="-d" ;;  # Set FLAG for desktop installation
-        s) FLAG="-s" ;;  # Set FLAG for server installation
-        *) handle_error "Invalid flag: -$OPTARG" ;;  # Handle invalid flags
-    esac
-done
-
 # Call the show_menu function at the start
 show_menu
 
@@ -339,7 +332,6 @@ install_zsh_plugins
 change_shell_to_zsh
 move_zshrc
 install_starship
-install_programs
 install_nerd_fonts
 enable_services
 create_fastfetch_config
