@@ -3,8 +3,7 @@
 ## Description
 This script automates the setup of a Debian-based system (Ubuntu, Pop!_OS, Debian) by performing various configurations and installations. It's designed to streamline the initial setup process for new installations or after system updates.
 
-## Author
-- **George Andromidas**
+![debianinstaller](https://github.com/GAndromidas/debianinstaller/blob/main/debianinstaller.png)
 
 ## Features
 - Sets the hostname (specifically for Pop!_OS).
