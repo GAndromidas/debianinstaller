@@ -60,7 +60,10 @@ install_desktop_programs() {
     sudo apt-get update
     sudo apt-get install -y "${desktop_programs[@]}"
     if [ $? -eq 0 ]; then
-        echo "Desktop programs installed successfully."
+        echo -e "\033[32mDesktop programs installed successfully:\033[0m"
+        for program in "${desktop_programs[@]}"; do
+            echo -e "\033[34m- $program\033[0m"  # Blue color for program names
+        done
     else
         echo "Failed to install Desktop programs."
         exit 1
@@ -73,7 +76,10 @@ install_server_programs() {
     sudo apt-get update
     sudo apt-get install -y "${server_programs[@]}"
     if [ $? -eq 0 ]; then
-        echo "Server programs installed successfully."
+        echo -e "\033[32mServer programs installed successfully:\033[0m"
+        for program in "${server_programs[@]}"; do
+            echo -e "\033[34m- $program\033[0m"  # Blue color for program names
+        done
     else
         echo "Failed to install Server programs."
         exit 1
@@ -88,10 +94,12 @@ FLAG="$1"
 case "$FLAG" in
     "-d")
         installation_mode="desktop"
+        echo -e "\033[33mSelected flag: Desktop installation\033[0m"  # Yellow for flag selection
         install_desktop_programs
         ;;
     "-s")
         installation_mode="server"
+        echo -e "\033[33mSelected flag: Server installation\033[0m"  # Yellow for flag selection
         install_server_programs
         ;;
     *)
