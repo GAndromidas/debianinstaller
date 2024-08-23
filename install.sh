@@ -138,6 +138,7 @@ install_kernel_headers() {
 install_media_codecs() {
     if [ "$DISTRO" == "Ubuntu" ] || [ "$DISTRO" == "Pop!_OS" ]; then
         print_info "Installing media codecs..."
+        print_info "This may take a few moments, please wait..."
         sudo apt-get install -y ubuntu-restricted-extras || handle_error "Error: Failed to install media codecs."
         print_success "Media codecs installed successfully."
     else
@@ -154,6 +155,7 @@ install_zsh() {
     fi
 
     print_info "Installing ZSH and Oh-My-ZSH..."
+    print_info "This may take a few moments, please wait..."
     sudo apt-get install -y zsh || handle_error "Error: Failed to install ZSH."
     yes | sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" || handle_error "Error: Failed to install Oh-My-ZSH."
     print_success "ZSH and Oh-My-ZSH installed successfully."
@@ -162,6 +164,7 @@ install_zsh() {
 # Function to install ZSH plugins
 install_zsh_plugins() {
     print_info "Installing ZSH plugins..."
+    print_info "This may take a few moments, please wait..."
     mkdir -p ~/.oh-my-zsh/custom/plugins
 
     # Check if plugins are already installed
@@ -194,6 +197,7 @@ move_zshrc() {
 # Function to install Starship prompt
 install_starship() {
     print_info "Installing Starship prompt..."
+    print_info "This may take a few moments, please wait..."
     curl -sS https://starship.rs/install.sh | sh -s -- -y || handle_error "Error: Starship prompt installation failed."
     mkdir -p "$HOME/.config"
     if [ -f "$HOME/debianinstaller/configs/starship.toml" ]; then
