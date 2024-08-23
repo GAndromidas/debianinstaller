@@ -5,7 +5,7 @@
 # Author: George Andromidas
 
 # Get the directory of the script
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"  # Define SCRIPT_DIR to get the script's directory
 
 # ASCII art
 clear
@@ -53,6 +53,34 @@ handle_error() {
     exit 1
 }
 
+# Function to show installation menu
+show_menu() {
+    echo -e "${CYAN}Select an installation option:${RESET}"
+    echo "1) Desktop Installation"
+    echo "2) Server Installation"
+    echo "3) Exit"
+    read -rp "Enter your choice: " choice
+
+    case $choice in
+        1)
+            print_info "Starting Desktop Installation..."
+            "$SCRIPT_DIR/scripts/programs.sh" -d  # Call programs.sh with -d flag
+            ;;
+        2)
+            print_info "Starting Server Installation..."
+            "$SCRIPT_DIR/scripts/programs.sh" -s  # Call programs.sh with -s flag
+            ;;
+        3)
+            print_info "Exiting..."
+            exit 0
+            ;;
+        *)
+            print_warning "Invalid choice. Please try again."
+            show_menu  # Show the menu again for invalid input
+            ;;
+    esac
+}
+
 # Function to check for required dependencies and install them if missing
 check_dependencies() {
     local dependencies=("lsb-release" "curl" "git" "unzip" "wget")
@@ -64,9 +92,6 @@ check_dependencies() {
     done
     print_success "All required dependencies are installed."
 }
-
-# Call the dependency check function at the start
-check_dependencies
 
 # Function to enable asterisks for password in sudoers
 enable_asterisks_sudo() {
@@ -181,9 +206,9 @@ install_starship() {
 # Function to install programs
 install_programs() {
     print_info "Installing Programs..."
-    (cd "$HOME/debianinstaller/scripts" && ./programs.sh "$FLAG") || handle_error "Error: Failed to install programs."
-    (cd "$HOME/debianinstaller/scripts" && ./fastfetch.sh) || handle_error "Error: Failed to install fastfetch."
-    (cd "$HOME/debianinstaller/scripts" && ./fail2ban.sh) || handle_error "Error: Failed to install fail2ban."
+    (cd "$HOME/debianinstaller/scripts" && "$SCRIPT_DIR/scripts/programs.sh" "$FLAG") || handle_error "Error: Failed to install programs."
+    (cd "$HOME/debianinstaller/scripts" && "$SCRIPT_DIR/scripts/fastfetch.sh") || handle_error "Error: Failed to install fastfetch."
+    (cd "$HOME/debianinstaller/scripts" && "$SCRIPT_DIR/scripts/fail2ban.sh") || handle_error "Error: Failed to install fail2ban."
     print_success "Programs installed successfully."
 }
 
@@ -289,36 +314,11 @@ reboot_system() {
     fi
 }
 
-# Function to show installation menu
-show_menu() {
-    echo -e "${CYAN}Select an installation option:${RESET}"
-    echo "1) Desktop Installation"
-    echo "2) Server Installation"
-    echo "3) Exit"
-    read -rp "Enter your choice: " choice
-
-    case $choice in
-        1)
-            print_info "Starting Desktop Installation..."
-            ./programs.sh -d  # Call programs.sh with -d flag
-            ;;
-        2)
-            print_info "Starting Server Installation..."
-            ./programs.sh -s  # Call programs.sh with -s flag
-            ;;
-        3)
-            print_info "Exiting..."
-            exit 0
-            ;;
-        *)
-            print_warning "Invalid choice. Please try again."
-            show_menu  # Show the menu again for invalid input
-            ;;
-    esac
-}
-
 # Call the show_menu function at the start
 show_menu
+
+# Call the dependency check function at the start
+check_dependencies
 
 # Call functions in the desired order
 enable_asterisks_sudo
