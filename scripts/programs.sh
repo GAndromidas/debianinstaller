@@ -95,10 +95,17 @@ install_docker() {
     echo "Installing Docker..."
     sudo apt-get install -y docker.io
     echo "Installing Portainer..."
-    sudo docker volume create portainer_data
-    sudo docker run -d -p 9000:9000 --name portainer --restart always \
+    # Check if Portainer is already installed
+    if ! sudo docker ps -a | grep -q portainer; then
+        sudo docker volume create portainer_data
+        sudo docker run -d -p 8000:8000 -p 9000:9000 --name=portainer \
+        --restart=always \
         -v /var/run/docker.sock:/var/run/docker.sock \
-        -v portainer_data:/data portainer/portainer-ce
+        -v portainer_data:/data \
+        portainer/portainer-ce
+    else
+        echo "Portainer is already installed."
+    fi
     echo "Installing Watchtower..."
     sudo docker run -d \
         --name watchtower \
