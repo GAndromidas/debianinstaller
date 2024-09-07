@@ -55,7 +55,7 @@ handle_error() {
 
 # Function to install required dependencies
 install_dependencies() {
-    local dependencies=(lsb-release curl figlet git unzip wget)
+    local dependencies=(lsb-release curl fzf figlet git unzip wget)
     for cmd in "${dependencies[@]}"; do
         if ! command -v "$cmd" &> /dev/null; then
             sudo apt-get install -y "$cmd" &> /dev/null || handle_error "Error: Failed to install $cmd."
