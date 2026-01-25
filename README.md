@@ -1,7 +1,5 @@
 # Debian Installer
 
-![debianinstaller](https://github.com/user-attachments/assets/7e0fa467-95e9-4d36-a308-04c8850828a4)
-
 A comprehensive post-installation script for Debian and Debian-based systems (like Ubuntu, Linux Mint, Pop!_OS, and Zorin OS), designed to automate the setup of a fully configured and optimized environment.
 
 ## Features
