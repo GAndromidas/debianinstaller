@@ -24,7 +24,7 @@ A comprehensive post-installation script for Debian and Debian-based systems (li
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your_username/debianinstaller.git
+    git clone https://github.com/GAndromidas/debianinstaller.git
     ```
 
 2.  **Navigate to the directory:**
