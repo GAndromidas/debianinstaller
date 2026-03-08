@@ -16,6 +16,17 @@ REMOVED_PACKAGES=()
 START_TIME=$(date +%s)
 TOTAL_STEPS=8 # Default, can be overridden
 
+# --- Distribution Detection Variables ---
+DISTRO_ID=""
+DISTRO_NAME=""
+DISTRO_VERSION=""
+DISTRO_CODENAME=""
+IS_DEBIAN=false
+IS_UBUNTU=false
+IS_MINT=false
+IS_ZORIN=false
+IS_POP_OS=false
+
 # --- UI & Logging Functions ---
 
 print_header() {
@@ -54,6 +65,77 @@ ui_error() {
 }
 
 # --- Core Logic ---
+
+# --- Distribution Detection Function ---
+detect_distribution() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        DISTRO_ID="$ID"
+        DISTRO_NAME="$NAME"
+        DISTRO_VERSION="$VERSION_ID"
+        DISTRO_CODENAME="${VERSION_CODENAME:-}"
+        
+        # Set distribution flags
+        case "$ID" in
+            debian)
+                IS_DEBIAN=true
+                ;;
+            ubuntu)
+                IS_UBUNTU=true
+                ;;
+            linuxmint)
+                IS_MINT=true
+                ;;
+            zorin)
+                IS_ZORIN=true
+                ;;
+            pop)
+                IS_POP_OS=true
+                ;;
+        esac
+        
+        # Handle Linux Mint which is Ubuntu-based
+        if [ "$IS_MINT" = true ] && [ -f /etc/upstream-release/lsb-release ]; then
+            . /etc/upstream-release/lsb-release
+            DISTRO_CODENAME="$DISTRIB_CODENAME"
+        fi
+        
+        ui_info "Detected: $DISTRO_NAME $DISTRO_VERSION (codename: $DISTRO_CODENAME)"
+    else
+        ui_error "Cannot detect distribution. /etc/os-release not found."
+        return 1
+    fi
+}
+
+# --- Package Availability Check Function ---
+is_package_available() {
+    local package="$1"
+    if apt-cache show "$package" >/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# --- Distribution-Specific Package Installer ---
+install_package_smart() {
+    local packages=("$@")
+    local available_packages=()
+    
+    for pkg in "${packages[@]}"; do
+        if is_package_available "$pkg"; then
+            available_packages+=("$pkg")
+        else
+            ui_warn "Package '$pkg' not available on $DISTRO_NAME $DISTRO_VERSION - skipping"
+        fi
+    done
+    
+    if [ ${#available_packages[@]} -gt 0 ]; then
+        apt_install "${available_packages[@]}"
+    else
+        ui_warn "No packages from the list are available on this distribution"
+    fi
+}
 
 show_menu() {
     echo -e "${CYAN}=====================================================${RESET}"

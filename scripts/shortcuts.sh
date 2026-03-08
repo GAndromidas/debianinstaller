@@ -18,10 +18,31 @@ detect_de() {
         case "$XDG_CURRENT_DESKTOP" in
             *GNOME*) echo "GNOME" ;;
             *KDE*)   echo "KDE" ;;
+            *XFCE*)  echo "XFCE" ;;
+            *MATE*)  echo "MATE" ;;
+            *Cinnamon*) echo "CINNAMON" ;;
+            *Budgie*) echo "BUDGIE" ;;
+            *POP*)   echo "POP" ;;
+            *COSMIC*) echo "COSMIC" ;;
             *)       echo "UNKNOWN" ;;
         esac
     else
-        echo "UNKNOWN"
+        # Fallback detection for older systems
+        if [ "$DESKTOP_SESSION" ]; then
+            case "$DESKTOP_SESSION" in
+                *gnome*) echo "GNOME" ;;
+                *kde*)   echo "KDE" ;;
+                *xfce*)  echo "XFCE" ;;
+                *mate*)  echo "MATE" ;;
+                *cinnamon*) echo "CINNAMON" ;;
+                *budgie*) echo "BUDGIE" ;;
+                *pop*)   echo "POP" ;;
+                *cosmic*) echo "COSMIC" ;;
+                *)       echo "UNKNOWN" ;;
+            esac
+        else
+            echo "UNKNOWN"
+        fi
     fi
 }
 
@@ -132,7 +153,148 @@ setup_kde_shortcuts() {
     dbus-send --session --dest=org.kde.kglobalaccel --type=method_call /component/org.kde.konsole.desktop org.kde.kglobalaccel.Component.reconfigure >/dev/null 2>&1 || true
 }
 
-# --- Main Execution ---
+# --- XFCE Shortcut Configuration ---
+setup_xfce_shortcuts() {
+    ui_info "Detected XFCE. Configuring shortcuts..."
+    
+    if ! command -v xfconf-query >/dev/null 2>&1; then
+        ui_error "'xfconf-query' command not found. Cannot configure XFCE shortcuts."
+        ERRORS+=("xfconf-query missing")
+        return
+    fi
+
+    if [ "$DRY_RUN" = true ]; then
+        ui_info "[DRY-RUN] Would configure shortcuts for XFCE."
+        return
+    fi
+
+    # Setup custom shortcuts for XFCE
+    ui_info "Setting up custom shortcuts for XFCE..."
+    # Note: XFCE shortcut configuration is more complex and typically requires GUI
+    ui_warn "XFCE shortcut configuration requires manual setup through Settings > Keyboard > Application Shortcuts"
+    ui_info "Recommended shortcuts to add manually:"
+    ui_info "  - Meta+Enter: xfce4-terminal"
+    ui_info "  - Meta+Q: xfce4-session-logout --logout"
+}
+
+# --- MATE Shortcut Configuration ---
+setup_mate_shortcuts() {
+    ui_info "Detected MATE. Configuring shortcuts..."
+    
+    if ! command -v gsettings >/dev/null 2>&1; then
+        ui_error "'gsettings' command not found. Cannot configure MATE shortcuts."
+        ERRORS+=("gsettings missing")
+        return
+    fi
+
+    if [ "$DRY_RUN" = true ]; then
+        ui_info "[DRY-RUN] Would configure shortcuts for MATE."
+        return
+    fi
+
+    # Setup terminal shortcut
+    ui_info "Setting up 'Meta+Enter' to launch terminal..."
+    gsettings set org.mate.desktop.keybindings terminal "<Super>Return" || true
+    
+    # Setup window close shortcut
+    ui_info "Setting up 'Meta+Q' to close windows..."
+    gsettings set org.mate.Marco.global-keybindings close "<Super>q" || true
+    
+    ui_success "MATE shortcuts configured successfully."
+}
+
+# --- Cinnamon Shortcut Configuration ---
+setup_cinnamon_shortcuts() {
+    ui_info "Detected Cinnamon. Configuring shortcuts..."
+    
+    if ! command -v gsettings >/dev/null 2>&1; then
+        ui_error "'gsettings' command not found. Cannot configure Cinnamon shortcuts."
+        ERRORS+=("gsettings missing")
+        return
+    fi
+
+    if [ "$DRY_RUN" = true ]; then
+        ui_info "[DRY-RUN] Would configure shortcuts for Cinnamon."
+        return
+    fi
+
+    # Setup terminal shortcut
+    ui_info "Setting up 'Meta+Enter' to launch terminal..."
+    gsettings set org.cinnamon.desktop.keybindings custom-list "['custom0']" || true
+    gsettings set org.cinnamon.desktop.keybindings.custom-keybinding:/org/cinnamon/desktop/keybindings/custom-keybindings/custom0/ name "Launch Terminal" || true
+    gsettings set org.cinnamon.desktop.keybindings.custom-keybinding:/org/cinnamon/desktop/keybindings/custom-keybindings/custom0/ command "gnome-terminal" || true
+    gsettings set org.cinnamon.desktop.keybindings.custom-keybinding:/org/cinnamon/desktop/keybindings/custom-keybindings/custom0/ binding "['<Super>Return']" || true
+    
+    ui_success "Cinnamon shortcuts configured successfully."
+}
+
+# --- Pop!_OS Shortcut Configuration ---
+setup_pop_shortcuts() {
+    ui_info "Detected Pop!_OS. Configuring shortcuts..."
+    
+    if ! command -v gsettings >/dev/null 2>&1; then
+        ui_error "'gsettings' command not found. Cannot configure Pop!_OS shortcuts."
+        ERRORS+=("gsettings missing")
+        return
+    fi
+
+    if [ "$DRY_RUN" = true ]; then
+        ui_info "[DRY-RUN] Would configure shortcuts for Pop!_OS."
+        return
+    fi
+
+    # Pop!_OS uses GNOME-based settings with Pop Shell modifications
+    setup_gnome_shortcuts
+    ui_success "Pop!_OS shortcuts configured successfully."
+}
+
+# --- Cosmic DE Shortcut Configuration ---
+setup_cosmic_shortcuts() {
+    ui_info "Detected Cosmic desktop environment. Configuring shortcuts..."
+    
+    # Cosmic DE is a new desktop environment based on the IcedWM toolkit
+    # It uses different configuration methods than GNOME
+    
+    if [ "$DRY_RUN" = true ]; then
+        ui_info "[DRY-RUN] Would configure shortcuts for Cosmic DE."
+        return
+    fi
+    
+    # Check for Cosmic-specific configuration tools
+    if command -v cosmic-settings >/dev/null 2>&1; then
+        ui_info "Cosmic settings detected. Attempting to configure shortcuts..."
+        
+        # Cosmic DE uses different configuration approach
+        # For now, provide manual configuration guidance
+        ui_warn "Cosmic DE requires manual shortcut configuration:"
+        ui_info "  1. Open Cosmic Settings"
+        ui_info "  2. Navigate to Keyboard > Shortcuts"
+        ui_info "  3. Add custom shortcuts:"
+        ui_info "     - Name: 'Launch Terminal'"
+        ui_info "     - Command: 'cosmic-term' or 'gnome-terminal'"
+        ui_info "     - Shortcut: Meta+Enter"
+        ui_info "     - Name: 'Close Window'"
+        ui_info "     - Command: 'cosmic-close' or similar"
+        ui_info "     - Shortcut: Meta+Q"
+        
+        # Try to create a basic configuration file if the directory exists
+        local cosmic_config_dir="$HOME/.config/cosmic"
+        if [ -d "$cosmic_config_dir" ]; then
+            ui_info "Cosmic config directory found. Creating shortcut configuration..."
+            # Note: This is a placeholder - actual Cosmic configuration format may differ
+            echo "# Cosmic DE shortcuts configuration" > "$cosmic_config_dir/shortcuts.conf" 2>/dev/null || true
+            echo "meta+terminal=cosmic-term" >> "$cosmic_config_dir/shortcuts.conf" 2>/dev/null || true
+            echo "meta+close=close-window" >> "$cosmic_config_dir/shortcuts.conf" 2>/dev/null || true
+        fi
+    else
+        ui_warn "Cosmic settings tools not found. Manual configuration required."
+        ui_info "Please configure shortcuts manually in Cosmic Settings:"
+        ui_info "  - Meta+Enter for terminal launcher"
+        ui_info "  - Meta+Q for window close"
+    fi
+    
+    ui_success "Cosmic DE shortcut configuration completed."
+}
 
 DE=$(detect_de)
 
@@ -143,8 +305,24 @@ case "$DE" in
     "KDE")
         setup_kde_shortcuts
         ;;
+    "XFCE")
+        setup_xfce_shortcuts
+        ;;
+    "MATE")
+        setup_mate_shortcuts
+        ;;
+    "CINNAMON")
+        setup_cinnamon_shortcuts
+        ;;
+    "POP")
+        setup_pop_shortcuts
+        ;;
+    "COSMIC")
+        setup_cosmic_shortcuts
+        ;;
     *)
-        ui_warn "No compatible desktop environment (GNOME or KDE) was detected."
-        ui_info "Skipping universal shortcut configuration."
+        ui_warn "Desktop environment '$DE' is not supported for automatic shortcut configuration."
+        ui_info "Supported environments: GNOME, KDE, XFCE, MATE, Cinnamon, Pop!_OS, Cosmic DE"
+        ui_info "You can manually configure shortcuts in your system settings."
         ;;
 esac

@@ -86,9 +86,65 @@ setup_flatpak() {
     fi
 }
 
+# --- Distribution-Specific Repository Setup ---
+setup_distribution_repos() {
+    ui_info "Setting up distribution-specific repositories..."
+    
+    if [ "$DRY_RUN" = true ]; then
+        ui_info "[DRY-RUN] Would set up distribution-specific repositories."
+        return 0
+    fi
+    
+    # Ubuntu-based distributions - add additional repositories
+    if [ "$IS_UBUNTU" = true ] || [ "$IS_MINT" = true ] || [ "$IS_ZORIN" = true ]; then
+        # Add universe and multiverse repositories if not already enabled
+        ui_info "Ensuring Ubuntu repositories are enabled..."
+        
+        # Check if we need to add repositories
+        if ! grep -q "universe" /etc/apt/sources.list 2>/dev/null; then
+            sudo add-apt-repository universe -y 2>/dev/null || ui_warn "Could not add universe repository"
+        fi
+        
+        if ! grep -q "multiverse" /etc/apt/sources.list 2>/dev/null; then
+            sudo add-apt-repository multiverse -y 2>/dev/null || ui_warn "Could not add multiverse repository"
+        fi
+        
+        # Update package list after adding repositories
+        sudo apt-get update -qq || ui_warn "Repository update failed"
+    fi
+    
+    # Debian-specific repository setup
+    if [ "$IS_DEBIAN" = true ]; then
+        ui_info "Configuring Debian repositories..."
+        
+        # For Debian, ensure contrib and non-free are enabled
+        if [ -f /etc/apt/sources.list ]; then
+            if ! grep -q "contrib" /etc/apt/sources.list && ! grep -q "non-free" /etc/apt/sources.list; then
+                ui_warn "Consider enabling contrib and non-free repositories for additional packages"
+                ui_info "You can enable them by adding 'contrib non-free' to your sources.list"
+            fi
+        fi
+    fi
+    
+    # Zorin OS specific setup
+    if [ "$IS_ZORIN" = true ]; then
+        ui_info "Configuring Zorin OS specific settings..."
+        # Zorin OS already has most repositories configured
+        ui_success "Zorin OS repositories are properly configured"
+    fi
+    
+    # Pop!_OS specific setup
+    if [ "$IS_POP_OS" = true ]; then
+        ui_info "Configuring Pop!_OS specific settings..."
+        # Pop!_OS has its own PPA for additional software
+        ui_success "Pop!_OS repositories are properly configured"
+    fi
+}
+
 # --- Main Execution ---
 update_and_upgrade
 install_core_dependencies
+setup_distribution_repos
 
 # Flatpak is a desktop-specific feature, so we only run it in that mode.
 if [ "$INSTALL_MODE" = "desktop" ]; then

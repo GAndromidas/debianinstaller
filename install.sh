@@ -57,7 +57,7 @@ CONFIGS_DIR="$SCRIPT_DIR/configs"
 
 # Sourcing common.sh here requires a correct path from the root.
 # All other scripts will be called from within the scripts/ directory.
-source "$SCRIPTS_DIR/common.sh"
+# common.sh is already sourced above with distribution detection
 
 # Initialize log file
 {
@@ -125,7 +125,71 @@ check_system_requirements() {
     exit 1
   fi
 }
+
+# --- Enhanced Distribution Compatibility Check ---
+check_distribution_compatibility() {
+  ui_info "Checking distribution compatibility..."
+  
+  # Check for supported distributions
+  local supported=false
+  local warning_msg=""
+  
+  if [ "$IS_DEBIAN" = true ]; then
+    if [[ "$DISTRO_VERSION" =~ ^(12|13)$ ]]; then
+      supported=true
+    else
+      warning_msg="Debian $DISTRO_VERSION may not be fully supported"
+    fi
+  elif [ "$IS_UBUNTU" = true ]; then
+    if [[ "$DISTRO_VERSION" =~ ^(22\.04|24\.04|24\.10|25\.04|25\.10|26\.04)$ ]]; then
+      supported=true
+    else
+      warning_msg="Ubuntu $DISTRO_VERSION may not be fully supported"
+    fi
+  elif [ "$IS_MINT" = true ]; then
+    if [[ "$DISTRO_VERSION" =~ ^(21\.x|22\.x)$ ]]; then
+      supported=true
+    else
+      warning_msg="Linux Mint $DISTRO_VERSION may not be fully supported"
+    fi
+  elif [ "$IS_ZORIN" = true ]; then
+    if [[ "$DISTRO_VERSION" =~ ^(16|17|18)$ ]]; then
+      supported=true
+    else
+      warning_msg="Zorin OS $DISTRO_VERSION may not be fully supported"
+    fi
+  elif [ "$IS_POP_OS" = true ]; then
+    if [[ "$DISTRO_VERSION" =~ ^(22\.04|24\.04)$ ]]; then
+      supported=true
+    else
+      warning_msg="Pop!_OS $DISTRO_VERSION may not be fully supported"
+    fi
+  fi
+  
+  if [ "$supported" = true ]; then
+    ui_success "Distribution $DISTRO_NAME $DISTRO_VERSION is fully supported"
+  else
+    if [ -n "$warning_msg" ]; then
+      ui_warn "$warning_msg - proceeding with caution"
+    else
+      ui_warn "Distribution $DISTRO_NAME $DISTRO_VERSION is not officially supported"
+      ui_warn "The script will attempt to continue but may encounter issues"
+    fi
+    
+    read -rp "Continue anyway? [y/N]: " continue_choice
+    if [[ ! "$continue_choice" =~ ^[Yy]$ ]]; then
+      ui_info "Installation cancelled by user"
+      exit 0
+    fi
+  fi
+}
+
 check_system_requirements
+
+# Source common functions and detect distribution
+source "$SCRIPTS_DIR/common.sh"
+detect_distribution
+check_distribution_compatibility
 
 # Prompt for sudo password now, so we can run subsequent commands
 if [ "$DRY_RUN" = false ]; then

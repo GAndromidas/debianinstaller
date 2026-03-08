@@ -42,19 +42,76 @@ install_oh_my_zsh() {
 
 install_zsh_plugins() {
     ui_info "Installing ZSH plugins (autosuggestions, syntax-highlighting)..."
+    
+    # First try to install from distribution repositories
+    local plugins_installed=false
+    
+    # Try installing zsh-autosuggestions from apt
+    if is_package_available "zsh-autosuggestions"; then
+        ui_info "Installing zsh-autosuggestions from repository..."
+        apt_install zsh-autosuggestions
+        plugins_installed=true
+    else
+        ui_warn "zsh-autosuggestions not available in repositories, using GitHub fallback..."
+    fi
+    
+    # Try installing zsh-syntax-highlighting from apt
+    if is_package_available "zsh-syntax-highlighting"; then
+        ui_info "Installing zsh-syntax-highlighting from repository..."
+        apt_install zsh-syntax-highlighting
+        plugins_installed=true
+    else
+        ui_warn "zsh-syntax-highlighting not available in repositories, using GitHub fallback..."
+    fi
+    
+    # If plugins weren't installed from apt, use GitHub fallback
+    if [ "$plugins_installed" = false ]; then
+        install_zsh_plugins_github_fallback
+    else
+        ui_success "ZSH plugins installed from repositories."
+    fi
+}
+
+install_zsh_plugins_github_fallback() {
+    ui_info "Installing ZSH plugins from GitHub (fallback method)..."
     local plugins_dir="$HOME/.oh-my-zsh/custom/plugins"
+    
     if [ "$DRY_RUN" = true ]; then
-        ui_info "[DRY-RUN] Would clone ZSH plugins."
+        ui_info "[DRY-RUN] Would clone ZSH plugins from GitHub."
         return 0
     fi
+    
     mkdir -p "$plugins_dir"
+    
+    # Install zsh-autosuggestions
     if [ ! -d "${plugins_dir}/zsh-autosuggestions" ]; then
-        git clone -q https://github.com/zsh-users/zsh-autosuggestions "${plugins_dir}/zsh-autosuggestions"
+        ui_info "Cloning zsh-autosuggestions from GitHub..."
+        if git clone -q https://github.com/zsh-users/zsh-autosuggestions "${plugins_dir}/zsh-autosuggestions"; then
+            ui_success "zsh-autosuggestions cloned successfully."
+        else
+            ui_error "Failed to clone zsh-autosuggestions."
+            ERRORS+=("zsh-autosuggestions clone")
+        fi
+    else
+        ui_info "zsh-autosuggestions already exists, updating..."
+        (cd "${plugins_dir}/zsh-autosuggestions" && git pull -q) || ui_warn "Failed to update zsh-autosuggestions"
     fi
+    
+    # Install zsh-syntax-highlighting
     if [ ! -d "${plugins_dir}/zsh-syntax-highlighting" ]; then
-        git clone -q https://github.com/zsh-users/zsh-syntax-highlighting.git "${plugins_dir}/zsh-syntax-highlighting"
+        ui_info "Cloning zsh-syntax-highlighting from GitHub..."
+        if git clone -q https://github.com/zsh-users/zsh-syntax-highlighting.git "${plugins_dir}/zsh-syntax-highlighting"; then
+            ui_success "zsh-syntax-highlighting cloned successfully."
+        else
+            ui_error "Failed to clone zsh-syntax-highlighting."
+            ERRORS+=("zsh-syntax-highlighting clone")
+        fi
+    else
+        ui_info "zsh-syntax-highlighting already exists, updating..."
+        (cd "${plugins_dir}/zsh-syntax-highlighting" && git pull -q) || ui_warn "Failed to update zsh-syntax-highlighting"
     fi
-    ui_success "ZSH plugins are up to date."
+    
+    ui_success "ZSH plugins installation completed."
 }
 
 # --- Starship Prompt ---

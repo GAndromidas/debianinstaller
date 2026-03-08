@@ -48,8 +48,24 @@ enable_system_services() {
         "fstrim.timer"
         "sshd.service"
     )
+    
+    # Add distribution-specific services
+    if [ "$IS_UBUNTU" = true ] || [ "$IS_MINT" = true ] || [ "$IS_ZORIN" = true ]; then
+        # Ubuntu-based systems benefit from these services
+        services_to_enable+=("apt-daily.timer" "apt-daily-upgrade.timer")
+    fi
+    
+    if [ "$IS_DEBIAN" = true ]; then
+        # Debian-specific services
+        services_to_enable+=("cron.service")
+    fi
+    
+    if [ "$IS_POP_OS" = true ]; then
+        # Pop!_OS specific services
+        services_to_enable+=("system76-power.service")
+    fi
 
-    ui_info "Enabling essential system services..."
+    ui_info "Enabling essential system services for $DISTRO_NAME..."
 
     if [ "$DRY_RUN" = true ]; then
         ui_info "[DRY-RUN] Would enable the following services: ${services_to_enable[*]}"
@@ -71,6 +87,52 @@ enable_system_services() {
     done
 }
 
+# --- Distribution-Specific Optimizations ---
+apply_distribution_optimizations() {
+    ui_info "Applying distribution-specific optimizations..."
+    
+    if [ "$DRY_RUN" = true ]; then
+        ui_info "[DRY-RUN] Would apply distribution-specific optimizations."
+        return 0
+    fi
+    
+    # Ubuntu-based optimizations
+    if [ "$IS_UBUNTU" = true ] || [ "$IS_MINT" = true ] || [ "$IS_ZORIN" = true ]; then
+        # Disable unnecessary services for better performance
+        ui_info "Optimizing Ubuntu-based system services..."
+        sudo systemctl disable snapd.seeded.service 2>/dev/null || true
+        sudo systemctl disable snapd.autoimport.service 2>/dev/null || true
+    fi
+    
+    # Debian optimizations
+    if [ "$IS_DEBIAN" = true ]; then
+        ui_info "Optimizing Debian system settings..."
+        # Ensure proper permissions for system directories
+        sudo chmod 755 /usr/local/bin 2>/dev/null || true
+    fi
+    
+    # Pop!_OS optimizations
+    if [ "$IS_POP_OS" = true ]; then
+        ui_info "Optimizing Pop!_OS settings..."
+        # Ensure Pop!_OS power management is properly configured
+        if command -v system76-power >/dev/null 2>&1; then
+            sudo system76-power daemon 2>/dev/null || true
+        fi
+        
+        # For Pop!_OS Cosmic, add Cosmic-specific optimizations
+        if [ "$XDG_CURRENT_DESKTOP" = "COSMIC" ]; then
+            ui_info "Applying Pop!_OS Cosmic optimizations..."
+            # Cosmic-specific services if available
+            if systemctl list-unit-files | grep -q "cosmic-session.service"; then
+                ui_info "Cosmic session service found"
+            fi
+        fi
+    fi
+    
+    ui_success "Distribution-specific optimizations applied."
+}
+
 # --- Main Execution ---
 configure_ufw
 enable_system_services
+apply_distribution_optimizations
