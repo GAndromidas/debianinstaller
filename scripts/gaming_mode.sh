@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script sets up the system for gaming by installing essential tools
-# and applications like Steam, Lutris, and performance enhancement utilities.
+# and applications like Steam, Faugus Launcher, and performance enhancement utilities.
 
 # Source common functions
 if [ -f "$(dirname "$0")/common.sh" ]; then
@@ -89,6 +89,36 @@ configure_mangohud() {
     fi
 }
 
+# --- Function to install Faugus Launcher from Flatpak ---
+install_faugus_launcher() {
+    if flatpak list | grep -q "com.faugus.Launcher"; then
+        ui_success "Faugus Launcher is already installed."
+        return 0
+    fi
+
+    ui_info "Installing Faugus Launcher from Flatpak..."
+    if [ "$DRY_RUN" = true ]; then
+        ui_info "[DRY-RUN] Would install Faugus Launcher from Flatpak."
+        return 0
+    fi
+
+    # Add Flathub if not already added
+    if ! flatpak remotes | grep -q "flathub"; then
+        ui_info "Adding Flathub remote..."
+        flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    fi
+
+    # Install Faugus Launcher
+    if flatpak install -y flathub com.faugus.Launcher; then
+        ui_success "Faugus Launcher installed successfully."
+        INSTALLED_PACKAGES+=("Faugus Launcher")
+    else
+        ui_error "Failed to install Faugus Launcher."
+        ERRORS+=("Faugus Launcher installation")
+        return 1
+    fi
+}
+
 # --- Function to install ProtonPlus from Flatpak ---
 install_protonplus() {
     if ! command -v flatpak >/dev/null 2>&1; then
@@ -116,26 +146,23 @@ install_protonplus() {
 # Prompt the user to install gaming tools using a standard text prompt
 echo ""
 ui_info "Optional: Install Gaming Mode?"
-read -rp "This will install Steam, Lutris, Discord, and other related tools. [Y/n]: " response
+read -rp "This will install Steam, Faugus Launcher, Discord, and other related tools. [Y/n]: " response
 if [[ -n "$response" && ! "$response" =~ ^[Yy]$ ]]; then
     ui_warn "Gaming Mode setup skipped by user."
     exit 0
 fi
 
 
-ui_info "This will include Steam, Lutris, GameMode, MangoHud, and more."
+ui_info "This will include Steam, Faugus Launcher, GameMode, MangoHud, and more."
 
 # Define the list of essential gaming packages
 # Including both 'steam' and 'steam-installer' makes it robust across different distro repos.
 gaming_packages=(
     "steam"
     "steam-installer"
-    "lutris"
     "gamemode"
     "mangohud"
-    "obs-studio"
     "wine"
-    "winetricks"
     "vulkan-tools"
 )
 
@@ -144,6 +171,9 @@ apt_install "${gaming_packages[@]}"
 
 # Install Discord separately as it's often not in repos
 install_discord
+
+# Install Faugus Launcher from Flatpak
+install_faugus_launcher
 
 # Install ProtonPlus from Flatpak
 install_protonplus

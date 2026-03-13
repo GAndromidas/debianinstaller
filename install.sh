@@ -366,7 +366,7 @@ if [ "$INSTALL_MODE" = "desktop" ]; then
         echo -e "  - Universal shortcuts (Meta+Enter for terminal, Meta+Q to close window)"
     fi
     if is_step_complete "gaming_mode" && dpkg-query -W -f='${Status}' "steam-installer" 2>/dev/null | grep -q "ok installed"; then
-        echo -e "  - Gaming tools installed (Steam, Lutris, Discord, etc.)"
+        echo -e "  - Gaming tools installed (Steam, Faugus Launcher, Discord, etc.)"
     fi
 fi
 

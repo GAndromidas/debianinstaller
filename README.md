@@ -88,7 +88,7 @@ The script automates the following steps:
 2.  **System Preparation**: Updates package lists, installs essential utilities, and configures distribution-specific repositories
 3.  **Shell Setup**: Configures an enhanced terminal experience with ZSH, Oh My Zsh, plugins, Starship, and Fastfetch
 4.  **Program Installation**: Installs a curated list of software based on your selection, with distribution-specific package filtering
-5.  **Gaming Mode (Desktop Only)**: Optionally installs Steam, Lutris, GameMode, and other gaming-related tools
+5.  **Gaming Mode (Desktop Only)**: Optionally installs Steam, Faugus Launcher, GameMode, and other gaming-related tools
 6.  **Desktop Shortcuts (Desktop Only)**: Configures universal keybindings for your specific desktop environment
 7.  **Fail2ban Setup**: Installs and configures Fail2ban for SSH security
 8.  **System Services**: Enables essential services and applies distribution-specific optimizations
