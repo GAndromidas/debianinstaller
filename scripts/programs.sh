@@ -227,7 +227,7 @@ install_fastfetch_fallback() {
     # Download and extract
     if curl -L "$download_url" -o "$temp_dir/fastfetch.tar.gz" && \
        tar -xzf "$temp_dir/fastfetch.tar.gz" -C "$temp_dir" && \
-       sudo mv "$temp_dir/usr/bin/fastfetch /usr/local/bin/ && \
+       sudo mv "$temp_dir/usr/bin/fastfetch" /usr/local/bin/ && \
        sudo chmod +x /usr/local/bin/fastfetch; then
         ui_success "fastfetch installed successfully via GitHub release"
         INSTALLED_PACKAGES+=("fastfetch")
@@ -385,83 +385,67 @@ install_nerd_fonts() {
     local font_url="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${font_name}.zip"
 
     if [ "$DRY_RUN" = true ]; then
-        ui_info "[DRY-RUN] Would download and install Hack Nerd Font from GitHub."
+        ui_info "[DRY-RUN] Would install Hack Nerd Font."
         return 0
     fi
 
-    # Check if the font files already exist to avoid re-downloading
-    if ls "${font_dir}/${font_name}"*NerdFont* >/dev/null 2>&1; then
-        ui_success "Hack Nerd Font is already installed."
-        return 0
-    fi
+    # Create font directory if it doesn't exist
+    mkdir -p "$font_dir"
 
-    ui_info "Downloading Hack Nerd Font..."
-    local temp_zip="/tmp/${font_name}.zip"
-    if ! wget -q -O "$temp_zip" "$font_url"; then
+    # Download font
+    if wget -q --show-progress "$font_url" -O "/tmp/${font_name}.zip"; then
+        # Extract font
+        if unzip -q "/tmp/${font_name}.zip" -d "$font_dir"; then
+            # Remove Windows-compatible fonts (keep only *.ttf and *.otf)
+            find "$font_dir" -name "*Windows*" -delete
+            # Rebuild font cache
+            fc-cache -fv >/dev/null 2>&1
+            ui_success "Hack Nerd Font installed successfully."
+        else
+            ui_error "Failed to extract Hack Nerd Font."
+            ERRORS+=("Nerd Font extraction")
+        fi
+        # Cleanup
+        rm -f "/tmp/${font_name}.zip"
+    else
         ui_error "Failed to download Hack Nerd Font."
         ERRORS+=("Nerd Font download")
-        return 1
     fi
-
-    ui_info "Extracting and installing font..."
-    mkdir -p "$font_dir"
-    if unzip -o "$temp_zip" -d "$font_dir" >/dev/null; then
-        rm -f "$temp_zip"
-        ui_success "Hack Nerd Font installed successfully."
-    else
-        ui_error "Failed to extract Hack Nerd Font."
-        ERRORS+=("Nerd Font extraction")
-        rm -f "$temp_zip"
-        return 1
-    fi
-
-    ui_info "Updating font cache..."
-    fc-cache -fv >/dev/null
 }
 
+# Function to install Docker
 install_docker() {
-    echo ""
-    read -rp "Install Docker Engine? [Y/n]: " response
-    if [[ -n "$response" && ! "$response" =~ ^[Yy]$ ]]; then
-        ui_warn "Skipping Docker installation."
-        return 1
+    if command -v docker >/dev/null 2>&1; then
+        ui_success "Docker is already installed."
+        return 0
     fi
 
     ui_info "Installing Docker..."
-    apt_install "docker.io"
-    if command -v docker >/dev/null 2>&1 || [ "$DRY_RUN" = true ]; then
-        ui_info "Adding current user to the 'docker' group..."
-        if [ "$DRY_RUN" = false ]; then
-            sudo usermod -aG docker "$USER"
-            ui_success "User added to docker group. You may need to log out and back in for this to take effect."
-        else
-            ui_info "[DRY-RUN] Would add user $USER to docker group."
-        fi
-        ui_info "Enabling Docker service..."
-        if [ "$DRY_RUN" = false ]; then
-            sudo systemctl enable --now docker
-        fi
-        ui_success "Docker service enabled and started."
+    if [ "$DRY_RUN" = true ]; then
+        ui_info "[DRY-RUN] Would install Docker."
         return 0
+    fi
+
+    # Add Docker's official GPG key:
+    if curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg; then
+        echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+            $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update
+        apt_install docker-ce docker-ce-cli containerd.io
+        sudo usermod -aG docker "$USER"
+        ui_success "Docker installed successfully. Please log out and log back in to use Docker without sudo."
     else
-        ui_error "Docker installation failed."
-        ERRORS+=("Docker installation")
-        return 1
+        ui_error "Failed to add Docker GPG key."
+        ERRORS+=("Docker GPG key")
     fi
 }
 
+# Function to install Portainer (Docker management UI)
 install_portainer() {
-    echo ""
-    read -rp "Install Portainer for Docker management? [Y/n]: " response
-    if [[ -n "$response" && ! "$response" =~ ^[Yy]$ ]]; then
-        ui_warn "Skipping Portainer installation."
-        return
-    fi
-
-    ui_info "Installing Portainer..."
     if [ "$DRY_RUN" = true ]; then
-        ui_info "[DRY-RUN] Would run 'docker volume create portainer_data' and 'docker run ... portainer/portainer-ce:latest'."
-        return
+        ui_info "[DRY-RUN] Would create Portainer container."
+        return 0
     fi
 
     ui_info "Creating Docker volume for Portainer data..."
@@ -591,5 +575,3 @@ case "$INSTALL_MODE" in
         exit 1
         ;;
 esac
-
-ui_success "Program installation phase completed."
