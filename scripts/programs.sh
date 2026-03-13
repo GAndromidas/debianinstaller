@@ -364,6 +364,61 @@ install_fd_fallback() {
     rm -rf "$temp_dir"
 }
 
+# Function to install ucaresystem-core from GitHub
+install_ucaresystem_core() {
+    ui_info "Installing ucaresystem-core from GitHub..."
+    
+    if [ "$DRY_RUN" = true ]; then
+        ui_info "[DRY-RUN] Would install ucaresystem-core from GitHub."
+        return 0
+    fi
+    
+    local temp_dir=$(mktemp -d)
+    local arch=$(uname -m)
+    local download_url=""
+    
+    # Get latest release info
+    local latest_release=$(curl -s "https://api.github.com/repos/Utappia/uCareSystem/releases/latest" | grep -o '"tag_name": "[^"]*' | cut -d'"' -f4)
+    
+    if [ -z "$latest_release" ]; then
+        ui_error "Failed to fetch latest ucaresystem-core release."
+        rm -rf "$temp_dir"
+        return 1
+    fi
+    
+    ui_info "Downloading ucaresystem-core ${latest_release}..."
+    
+    # Determine architecture and download URL
+    case "$arch" in
+        x86_64)
+            download_url="https://github.com/Utappia/uCareSystem/releases/download/${latest_release}/ucaresystem-core-${latest_release#v}-linux-x64.tar.gz"
+            ;;
+        aarch64|arm64)
+            download_url="https://github.com/Utappia/uCareSystem/releases/download/${latest_release}/ucaresystem-core-${latest_release#v}-linux-arm64.tar.gz"
+            ;;
+        *)
+            ui_error "Unsupported architecture: $arch"
+            rm -rf "$temp_dir"
+            return 1
+            ;;
+    esac
+    
+    # Download and extract
+    if curl -L "$download_url" -o "$temp_dir/ucaresystem-core.tar.gz" && \
+       tar -xzf "$temp_dir/ucaresystem-core.tar.gz" -C "$temp_dir" && \
+       sudo mv "$temp_dir/ucaresystem-core" /usr/local/bin/ && \
+       sudo chmod +x /usr/local/bin/ucaresystem-core; then
+        ui_success "ucaresystem-core installed successfully."
+    else
+        ui_error "Failed to install ucaresystem-core."
+        rm -rf "$temp_dir"
+        return 1
+    fi
+    
+    # Cleanup
+    rm -rf "$temp_dir"
+}
+
 # Function to install packages with fallback support
 install_with_fallback() {
     local package_name="$1"
@@ -523,6 +578,9 @@ run_desktop_install() {
     install_with_fallback "ripgrep" "install_ripgrep_fallback"
     install_with_fallback "fd-find" "install_fd_fallback"
 
+    # Install ucaresystem-core from GitHub (always latest version)
+    install_ucaresystem_core
+
     # Conditionally install GNOME Tweaks if running in a GNOME environment
     if [[ "${XDG_CURRENT_DESKTOP}" == *"GNOME"* ]]; then
         ui_info "GNOME desktop detected. Installing GNOME Tweaks..."
@@ -552,6 +610,9 @@ run_server_install() {
     install_with_fallback "fastfetch" "install_fastfetch_fallback"
     install_with_fallback "ripgrep" "install_ripgrep_fallback"
     install_with_fallback "fd-find" "install_fd_fallback"
+    
+    # Install ucaresystem-core from GitHub (always latest version)
+    install_ucaresystem_core
     
     install_nerd_fonts
 
