@@ -75,22 +75,30 @@ detect_distribution() {
         DISTRO_VERSION="$VERSION_ID"
         DISTRO_CODENAME="${VERSION_CODENAME:-}"
         
+        # Export variables for child processes
+        export DISTRO_ID DISTRO_NAME DISTRO_VERSION DISTRO_CODENAME
+        
         # Set distribution flags
         case "$ID" in
             debian)
                 IS_DEBIAN=true
+                export IS_DEBIAN
                 ;;
             ubuntu)
                 IS_UBUNTU=true
+                export IS_UBUNTU
                 ;;
             linuxmint)
                 IS_MINT=true
+                export IS_MINT
                 ;;
             zorin)
                 IS_ZORIN=true
+                export IS_ZORIN
                 ;;
             pop)
                 IS_POP_OS=true
+                export IS_POP_OS
                 ;;
         esac
         
@@ -182,39 +190,47 @@ apt_install() {
             to_install+=("$pkg")
         fi
     done
-
-    if [ "${#to_install[@]}" -eq 0 ]; then
-        ui_info "All packages already installed."
-        return 0
-    fi
-
-    ui_info "Installing ${#to_install[@]} packages via apt..."
-    export DEBIAN_FRONTEND=noninteractive
-
     if [ "$DRY_RUN" = true ]; then
-        ui_info "[DRY-RUN] Would install: ${to_install[*]}"
+        ui_info "[DRY-RUN] Would install ${#to_install[@]} packages via apt: ${to_install[*]}"
         return 0
     fi
-
-    sudo apt-get update -qq || ui_warn "apt update failed, continuing anyway..."
-
+    
+    # Suppress Python warnings during package installation
+    suppress_python_warnings
+    
+    # Suppress verbose apt output for cleaner installation
+    suppress_apt_output
+    
+    ui_info "Installing ${#to_install[@]} packages via apt..."
     if sudo apt-get install -y -qq "${to_install[@]}"; then
         ui_success "All packages installed successfully"
-        INSTALLED_PACKAGES+=("${to_install[@]}")
     else
+        # If batch install fails, try individual packages
         ui_warn "Batch install failed, trying individual installation..."
-        for pkg in "${pkgs[@]}"; do
-            if sudo apt-get install -y -qq "$pkg"; then
-                ui_success "Installed $pkg"
-                INSTALLED_PACKAGES+=("${pkg}")
-            else
-                ui_error "Failed to install $pkg"
-                ERRORS+=("apt install $pkg")
+        local failed_packages=()
+        for package in "${to_install[@]}"; do
+            if ! sudo apt-get install -y -qq "$package" 2>/dev/null; then
+                ui_error "Failed to install $package"
+                failed_packages+=("$package")
+                ERRORS+=("$package install")
             fi
         done
+        
+        if [ ${#failed_packages[@]} -gt 0 ]; then
+            ui_error "Failed to install packages: ${failed_packages[*]}"
+            return 1
+        fi
     fi
+    
+    # Restore Python warnings and clean up environment
+    cleanup_install_environment
 }
 
+# Function to restore environment after installation
+cleanup_install_environment() {
+    unset PYTHONWARNINGS
+    unset APT_OPTIONS
+}
 
 # --- Summary & Finalization ---
 
