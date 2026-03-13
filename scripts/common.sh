@@ -12,9 +12,15 @@ RESET='\033[0m'
 # --- Global Variables ---
 ERRORS=()
 INSTALLED_PACKAGES=()
+FAILED_PACKAGES=()
 REMOVED_PACKAGES=()
 START_TIME=$(date +%s)
 TOTAL_STEPS=8 # Default, can be overridden
+
+# --- Installation Mode Variables ---
+VERBOSE_MODE=false
+QUIET_MODE=false
+DRY_RUN=false
 
 # --- Distribution Detection Variables ---
 DISTRO_ID=""
@@ -204,6 +210,38 @@ cleanup_install_environment() {
     unset APT_OPTIONS
 }
 
+# Enhanced package installation functions (inspired by archinstaller)
+apt_install_single() {
+    local pkg="$1"
+    local verbose="${2:-false}"
+    
+    if [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ]; then
+        printf "${CYAN}Installing APT package:${RESET} %-30s" "$pkg"
+    fi
+    
+    # Check if already installed
+    if dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "ok installed"; then
+        [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] && printf "${YELLOW} ✓ Already installed${RESET}\n"
+        return 0
+    fi
+    
+    local output
+    if output=$(sudo apt-get install -y "$pkg" 2>&1); then
+        [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] && printf "${GREEN} ✓ Success${RESET}\n"
+        INSTALLED_PACKAGES+=("$pkg")
+        return 0
+    else
+        [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] && printf "${RED} ✗ Failed${RESET}\n"
+        # Show output if verbose or if it's a critical error
+        if [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] || [[ "$output" == *"E:"* ]] || [[ "$output" == *"Error:"* ]]; then
+            echo "$output" | sed 's/^/    /'
+        fi
+        FAILED_PACKAGES+=("$pkg")
+        return 1
+    fi
+}
+
+# Main apt_install function with batch installation and fallback
 apt_install() {
     local pkgs=("$@")
     local to_install=()
@@ -214,46 +252,51 @@ apt_install() {
             to_install+=("$pkg")
         fi
     done
+    
     if [ "$DRY_RUN" = true ]; then
-        ui_info "[DRY-RUN] Would install ${#to_install[@]} packages via apt: ${to_install[*]}"
+        if [ "$VERBOSE_MODE" = true ] || [ ${#to_install[@]} -gt 0 ]; then
+            ui_info "[DRY-RUN] Would install ${#to_install[@]} packages via apt: ${to_install[*]}"
+        fi
         return 0
     fi
     
     # Check if any packages to install
     if [ ${#to_install[@]} -eq 0 ]; then
+        [ "$VERBOSE_MODE" = true ] && ui_info "All packages already installed."
         return 0
+    fi
+    
+    if [ "$QUIET_MODE" = false ]; then
+        ui_info "Installing ${#to_install[@]} packages via apt..."
+    fi
+
+    # Try batch install first for speed (like archinstaller)
+    if [ "$VERBOSE_MODE" = false ] && [ "$QUIET_MODE" = false ]; then
+        printf "${CYAN}Attempting batch installation...${RESET}\n"
     fi
     
     # Suppress Python warnings during package installation
     suppress_python_warnings
     
-    # Suppress verbose apt output for cleaner installation
-    suppress_apt_output
-    
-    ui_info "Installing ${#to_install[@]} packages via apt..."
-    if sudo apt-get install -y -qq "${to_install[@]}" 2>/dev/null; then
-        ui_success "All packages installed successfully"
-    else
-        # If batch install fails, try individual packages
-        ui_warn "Batch install failed, trying individual installation..."
-        local failed_packages=()
-        for package in "${to_install[@]}"; do
-            if ! sudo apt-get install -y -qq "$package" 2>/dev/null; then
-                ui_error "Failed to install $package"
-                failed_packages+=("$package")
-                ERRORS+=("$package install")
-            fi
-        done
-        
-        # Restore environment before returning
-        cleanup_install_environment
-        
-        if [ ${#failed_packages[@]} -gt 0 ]; then
-            return 1
+    if sudo apt-get install -y -qq "${to_install[@]}" >/dev/null 2>&1; then
+        if [ "$VERBOSE_MODE" = false ] && [ "$QUIET_MODE" = false ]; then
+            printf "${GREEN} ✓ Batch installation successful${RESET}\n"
         fi
+        INSTALLED_PACKAGES+=("${to_install[@]}")
+        cleanup_install_environment
+        return 0
+    fi
+
+    # Batch failed, fall back to individual installation
+    if [ "$QUIET_MODE" = false ]; then
+        printf "${YELLOW} ! Batch installation failed. Falling back to individual installation...${RESET}\n"
     fi
     
-    # Restore Python warnings and clean up environment
+    for package in "${to_install[@]}"; do
+        apt_install_single "$package" "$VERBOSE_MODE"
+    done
+    
+    # Restore environment
     cleanup_install_environment
 }
 
@@ -293,13 +336,21 @@ print_summary() {
     log_performance "Total execution time"
 
     if [ ${#INSTALLED_PACKAGES[@]} -gt 0 ]; then
-        echo -e "${GREEN}Installed Packages:${RESET} ${INSTALLED_PACKAGES[*]}"
+        echo -e "${GREEN}✓ Successfully Installed Packages (${#INSTALLED_PACKAGES[@]}):${RESET}"
+        printf "  %s\n" "${INSTALLED_PACKAGES[@]}"
     fi
+    
+    if [ ${#FAILED_PACKAGES[@]} -gt 0 ]; then
+        echo -e "${RED}✗ Failed Package Installations (${#FAILED_PACKAGES[@]}):${RESET}"
+        printf "  %s\n" "${FAILED_PACKAGES[@]}"
+    fi
+    
     if [ ${#REMOVED_PACKAGES[@]} -gt 0 ]; then
         echo -e "${YELLOW}Removed Packages:${RESET} ${REMOVED_PACKAGES[*]}"
     fi
+    
     if [ ${#ERRORS[@]} -gt 0 ]; then
-        echo -e "${RED}Errors Encountered:${RESET}"
+        echo -e "${RED}Additional Errors Encountered:${RESET}"
         for error in "${ERRORS[@]}"; do
             echo "  - $error"
         done

@@ -76,19 +76,23 @@ log_both() {
 START_TIME=$(date +%s)
 
 # Parse flags
-VERBOSE=false
+VERBOSE_MODE=false
+QUIET_MODE=false
 DRY_RUN=false
 for arg in "$@"; do
   case "$arg" in
     -v|--verbose)
-      VERBOSE=true
+      VERBOSE_MODE=true
+      QUIET_MODE=false
       ;;
     -q|--quiet)
-      VERBOSE=false
+      QUIET_MODE=true
+      VERBOSE_MODE=false
       ;;
     -d|--dry-run)
       DRY_RUN=true
-      VERBOSE=true
+      VERBOSE_MODE=true
+      QUIET_MODE=false
       ;;
     -h|--help)
       show_help
@@ -100,7 +104,8 @@ for arg in "$@"; do
       ;;
   esac
 done
-export VERBOSE
+export VERBOSE_MODE
+export QUIET_MODE
 export DRY_RUN
 export INSTALL_LOG
 
