@@ -219,6 +219,11 @@ apt_install() {
         return 0
     fi
     
+    # Check if any packages to install
+    if [ ${#to_install[@]} -eq 0 ]; then
+        return 0
+    fi
+    
     # Suppress Python warnings during package installation
     suppress_python_warnings
     
@@ -240,8 +245,10 @@ apt_install() {
             fi
         done
         
+        # Restore environment before returning
+        cleanup_install_environment
+        
         if [ ${#failed_packages[@]} -gt 0 ]; then
-            ui_error "Failed to install packages: ${failed_packages[*]}"
             return 1
         fi
     fi

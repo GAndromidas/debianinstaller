@@ -178,10 +178,11 @@ install_fastfetch() {
         return 0
     fi
     ui_info "Trying to install Fastfetch from APT repository..."
-    apt_install fastfetch
-    if command -v fastfetch >/dev/null 2>&1; then
-        ui_success "Fastfetch installed successfully from repository."
-        return 0
+    if apt_install fastfetch; then
+        if command -v fastfetch >/dev/null 2>&1; then
+            ui_success "Fastfetch installed successfully from repository."
+            return 0
+        fi
     fi
     ui_warn "Fastfetch not found in APT or installation failed."
     if ! install_fastfetch_from_github; then
