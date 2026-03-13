@@ -358,6 +358,8 @@ install_fd_fallback() {
     # Cleanup
     rm -rf "$temp_dir"
 }
+
+# Function to install packages with fallback support
 install_with_fallback() {
     local package_name="$1"
     local fallback_function="$2"
