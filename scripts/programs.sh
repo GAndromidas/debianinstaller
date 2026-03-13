@@ -51,6 +51,7 @@ get_desktop_packages() {
         "speedtest-cli"
         "sshfs"
         "ttf-mscorefonts-installer"
+        "wmctrl" # Window management tool for shortcuts
         "unrar"
         "unzip"
         "vlc"

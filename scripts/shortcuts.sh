@@ -218,12 +218,18 @@ setup_cinnamon_shortcuts() {
         return
     fi
 
-    # Setup terminal shortcut
+    # Setup terminal shortcut (Meta+Enter)
     ui_info "Setting up 'Meta+Enter' to launch terminal..."
-    gsettings set org.cinnamon.desktop.keybindings custom-list "['custom0']" || true
+    gsettings set org.cinnamon.desktop.keybindings custom-list "['custom0', 'custom1']" || true
     gsettings set org.cinnamon.desktop.keybindings.custom-keybinding:/org/cinnamon/desktop/keybindings/custom-keybindings/custom0/ name "Launch Terminal" || true
     gsettings set org.cinnamon.desktop.keybindings.custom-keybinding:/org/cinnamon/desktop/keybindings/custom-keybindings/custom0/ command "gnome-terminal" || true
     gsettings set org.cinnamon.desktop.keybindings.custom-keybinding:/org/cinnamon/desktop/keybindings/custom-keybindings/custom0/ binding "['<Super>Return']" || true
+    
+    # Setup close window shortcut (Meta+Q)
+    ui_info "Setting up 'Meta+Q' to close window..."
+    gsettings set org.cinnamon.desktop.keybindings.custom-keybinding:/org/cinnamon/desktop/keybindings/custom-keybindings/custom1/ name "Close Window" || true
+    gsettings set org.cinnamon.desktop.keybindings.custom-keybinding:/org/cinnamon/desktop/keybindings/custom-keybindings/custom1/ command "wmctrl -c :ACTIVE:" || true
+    gsettings set org.cinnamon.desktop.keybindings.custom-keybinding:/org/cinnamon/desktop/keybindings/custom-keybindings/custom1/ binding "['<Super>q']" || true
     
     ui_success "Cinnamon shortcuts configured successfully."
 }
