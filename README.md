@@ -1,155 +1,351 @@
-# Debian Installer
+<div align="center">
 
-A comprehensive post-installation script for Debian and Debian-based systems, designed to automate the setup of a fully configured and optimized environment with enhanced compatibility across multiple distributions.
+# 🚀 Debianinstaller
 
-## Enhanced Distribution Support
+[![Last Commit](https://img.shields.io/github/last-commit/GAndromidas/debianinstaller.svg?style=for-the-badge)](https://github.com/GAndromidas/debianinstaller/commits/main)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
-✅ **Fully Supported Distributions:**
-- **Debian**: 12.x, 13.x (Trixie)
-- **Ubuntu**: 22.04 LTS, 24.04 LTS, 24.10, 25.04, 25.10, 26.04 LTS
-- **Linux Mint**: 21.x, 22.x
-- **Zorin OS**: 16, 17, 18
-- **Pop!_OS**: 22.04 LTS, 24.04 LTS
+**Professional Debian-based Distro Post-Installation Automation**
 
-✅ **Desktop Environment Support:**
-- GNOME (Ubuntu, Pop!_OS legacy, Debian default)
-- KDE Plasma (Kubuntu, Debian KDE)
-- XFCE (Xubuntu, Debian XFCE)
-- MATE (Ubuntu MATE, Debian MATE)
-- Cinnamon (Linux Mint)
-- Budgie
-- Cosmic DE (Pop!_OS Cosmic epoch 1.0.8+)
+Transform your fresh Debian, Ubuntu, Linux Mint, Zorin OS, or Pop!_OS installation into a fully configured, optimized system with intelligent distribution detection and tailored optimizations.
 
-## Features
+[Installation](#-quick-start) • [Features](#-key-features) • [Modes](#-installation-modes)
 
--   **Enhanced Distribution Detection**: Automatically detects your specific distribution and version for optimal compatibility
--   **Smart Package Management**: Checks package availability before installation and skips unavailable packages
--   **Fallback Installation**: Installs essential tools (eza, fastfetch, ripgrep, fd) via GitHub releases when not available in repositories
--   **Distribution-Specific Optimizations**: Applies tailored settings for each supported distribution
--   **Repository Configuration**: Automatically enables appropriate repositories (universe, multiverse, contrib, non-free)
--   **Interactive Menu**: Simple, clean interface to choose your installation type.
--   **Two distinct modes**:
-    -   **Desktop Mode**: Sets up a complete graphical environment with essential applications, development tools, media codecs, and optional gaming software.
-    -   **Server Mode**: Configures a headless server with crucial services like SSH, Samba, and optional containerization with Docker and Portainer.
--   **Universal Shortcuts**: Sets `Meta+Enter` to open a terminal and `Meta+Q` to kill a window on GNOME, KDE, XFCE, MATE, Cinnamon, Pop!_OS, and Cosmic DE environments.
--   **Automated Shell Setup**: Installs and configures ZSH, Oh My Zsh, useful plugins, and the modern Starship prompt.
--   **Security Hardening**: Automatically configures UFW (Uncomplicated Firewall) and installs Fail2ban to protect against SSH brute-force attacks.
--   **System Optimization**: Enables essential system services and performs distribution-specific optimizations.
--   **Re-runnable**: Safely re-run the script to install new features or packages without overwriting your existing custom configurations.
+</div>
 
-## Requirements
+---
 
--   A fresh installation of a supported Debian-based operating system (see list above)
--   A regular user account with `sudo` privileges.
--   An active internet connection.
--   Minimum 2GB free disk space.
+## 📋 Overview
 
-## Usage
+**Debianinstaller** is a sophisticated post-installation automation tool that intelligently configures Debian-based distributions based on your system. It applies targeted optimizations rather than one-size-fits-all settings, ensuring optimal performance for your specific distribution and hardware.
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/GAndromidas/debianinstaller.git
-    ```
+**Core Philosophy:**
+- 🎯 **Distribution-Aware** - Detects Debian, Ubuntu, Mint, Zorin OS, Pop!_OS with version-specific support
+- 🛡️ **Security-First** - Comprehensive hardening with Fail2ban and firewall configuration
+- ⚡ **Performance-Optimized** - Intelligent package management and system tuning
+- 🔄 **Reliable** - Robust error handling and fallback mechanisms
 
-2.  **Navigate to the directory:**
-    ```bash
-    cd debianinstaller
-    ```
+---
 
-3.  **Test compatibility (optional but recommended):**
-    ```bash
-    chmod +x test_compatibility.sh
-    ./test_compatibility.sh
-    ```
+## 🎯 Key Features
 
-4.  **Make the script executable:**
-    ```bash
-    chmod +x install.sh
-    ```
+### 🔍 System Intelligence & Automation
 
-5.  **Run the installer:**
-    ```bash
-    ./install.sh
-    ```
-    You will be prompted for your `sudo` password and then guided through the installation choices.
+- **Distribution Detection**
+  - Automatically identifies Debian, Ubuntu, Linux Mint, Zorin OS, Pop!_OS
+  - Version-specific package compatibility checking
+  - Distribution-specific repository configuration
+  - Codename detection for precise package management
 
-## Command Line Options
+- **Hardware-Aware Installation**
+  - CPU architecture detection (x86_64, ARM64)
+  - GPU driver optimization (NVIDIA, AMD, Intel)
+  - Storage type detection and optimization
+  - Desktop environment recognition and integration
 
--   `./install.sh` - Run with interactive prompts
--   `./install.sh --verbose` - Show detailed package installation output
--   `./install.sh --dry-run` - Preview what will be installed without making changes
--   `./install.sh --help` - Show help message
+- **Smart Package Management**
+  - Package availability checking before installation
+  - Automatic fallback to GitHub releases for missing packages
+  - Batch installation with individual fallback
+  - Professional progress indicators with verbose/quiet modes
 
-## Installation Steps
+### 🛡️ Security & Stability
 
-The script automates the following steps:
+- **Security Hardening (Enabled by Default)**
+  - UFW firewall configuration with secure policies
+  - Fail2ban SSH brute-force protection
+  - System service optimization
+  - Automatic security updates configuration
 
-1.  **Distribution Detection & Compatibility Check**: Identifies your distribution and verifies compatibility
-2.  **System Preparation**: Updates package lists, installs essential utilities, and configures distribution-specific repositories
-3.  **Shell Setup**: Configures an enhanced terminal experience with ZSH, Oh My Zsh, plugins, Starship, and Fastfetch
-4.  **Program Installation**: Installs a curated list of software based on your selection, with distribution-specific package filtering
-5.  **Gaming Mode (Desktop Only)**: Optionally installs Steam, Faugus Launcher, GameMode, and other gaming-related tools
-6.  **Desktop Shortcuts (Desktop Only)**: Configures universal keybindings for your specific desktop environment
-7.  **Fail2ban Setup**: Installs and configures Fail2ban for SSH security
-8.  **System Services**: Enables essential services and applies distribution-specific optimizations
-9.  **Maintenance**: Performs system cleanup and maintenance tasks
+- **System Reliability**
+  - Robust error handling and recovery
+  - Comprehensive logging and debugging
+  - Clean environment management
+  - Package dependency resolution
 
-## What's New in This Version
+- **Data Integrity**
+  - Automatic system maintenance tasks
+  - Package cache optimization
+  - System cleanup and maintenance
+  - Log rotation and management
 
-### 🚀 Enhanced Compatibility
-- **Smart Distribution Detection**: Automatically detects Debian, Ubuntu, Linux Mint, Zorin OS, and Pop!_OS with version-specific support
-- **Package Availability Checking**: Prevents installation failures by checking package availability before installation
-- **Repository Management**: Automatically enables appropriate repositories for each distribution
-- **Desktop Environment Support**: Full support for GNOME, KDE, XFCE, MATE, Cinnamon, and Budgie
+### 🎮 Installation Modes
 
-### 🔧 Distribution-Specific Features
-- **Debian**: Enables contrib/non-free repositories, installs firmware packages
-- **Ubuntu/Linux Mint/Zorin OS**: Enables universe/multiverse repositories, includes ubuntu-restricted-extras
-- **Pop!_OS**: Includes Pop Shell and System76 power management optimizations
-- **Pop!_OS Cosmic**: Cosmic DE support with manual shortcut configuration guidance
+Choose the perfect setup for your use case:
 
-### 🛠️ Improved Error Handling
-- Graceful handling of missing packages across different distributions
-- Better error reporting and logging
-- Non-critical failures won't stop the entire installation
+| Mode | Description | Best For |
+|------|-------------|----------|
+| **Desktop** | Full-featured desktop with all recommended packages | General users, enthusiasts |
+| **Server** | Headless configuration with Docker, Portainer, and SSH | Servers, VMs, headless deployments |
 
-### 🧪 Testing Tools
-- New compatibility test script (`./test_compatibility.sh`) to verify system compatibility before running the main installer
+### 🎮 Optional Gaming Mode
 
-## Troubleshooting
+Transform your system into a gaming powerhouse with one click:
 
-### Common Issues and Solutions
+- Steam, Faugus Launcher (via Flatpak)
+- MangoHud performance overlay
+- GameMode for automatic performance tuning
+- Discord for gaming communication
+- Wine for Windows gaming compatibility
+- ProtonPlus for Proton-GE management
 
-1.  **Package Not Available Errors**: The script automatically skips unavailable packages and uses fallback installation methods for essential tools
-2.  **Repository Issues**: The script attempts to enable required repositories automatically
-3.  **Desktop Environment Not Detected**: Some environments may require manual shortcut configuration
-4.  **Permission Denied**: Ensure you're running as a regular user with sudo privileges, not as root
-5.  **GitHub Installation Fails**: If fallback installations fail, check internet connection and try running the script again
+### 🚀 User Experience
 
-### Log Files
+- **Professional Installation Interface**
+  - Clean, colored progress indicators
+  - Batch installation with intelligent fallback
+  - Verbose/quiet/dry-run modes for flexibility
+  - Real-time package tracking and error reporting
 
-- Installation log: `~/.debianinstaller.log`
-- State tracking: `~/.debianinstaller.state` (for resuming interrupted installations)
+- **Enhanced Terminal Environment**
+  - Pre-configured Zsh with Oh-My-Zsh framework
+  - Starship prompt for beautiful terminal design
+  - Syntax highlighting and auto-completion
+  - Custom aliases and productivity plugins
 
-## Contributing
+- **Universal Desktop Integration**
+  - KDE Plasma: Custom shortcuts and optimizations
+  - GNOME: Dark theme and system tweaks
+  - XFCE, MATE, Cinnamon, Budgie: Full support
+  - Cosmic DE: Next-generation environment support
 
-Contributions are welcome! Please ensure:
-1.  Test changes across multiple distributions
-2.  Update the compatibility test script when adding new features
-3.  Follow the existing code style and error handling patterns
+---
 
-## License
+### 📊 Supported Platforms
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+### Distributions
+- ✅ **Debian** 12+ (Bookworm, Trixie)
+- ✅ **Ubuntu** 22.04+ (Jammy, Noble, Mantic)
+- ✅ **Linux Mint** 21.x, 22.x (Vanessa, Vera, Victoria, Wilma)
+- ✅ **Zorin OS** 16.x, 17.x
+- ✅ **Pop!_OS** 22.04+
 
-## Customization
+### Hardware
+- ✅ **CPU**: Intel, AMD (x86_64, ARM64)
+- ✅ **GPU**: NVIDIA, AMD, Intel with appropriate drivers
+- ✅ **Storage**: NVMe, SSD, HDD with optimizations
+- ✅ **Form Factors**: Desktop, Laptop, Virtual Machines
 
-You can easily customize the shell environment before running the installer. Simply edit the configuration files located in the `configs/` directory:
+### Desktop Environments
+- ✅ **KDE Plasma** 5.x and 6.x
+- ✅ **GNOME** 40+
+- ✅ **XFCE**, **MATE**, **Cinnamon**, **Budgie**
+- ✅ **Cosmic DE** (experimental)
 
--   `.zshrc`: The main configuration file for the ZSH shell.
--   `starship.toml`: The configuration for the Starship cross-shell prompt.
--   `config.jsonc`: The configuration for the Fastfetch system information tool.
+---
 
-## License
+## 🚀 Quick Start
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+### Prerequisites
+
+- **Fresh Debian-based installation** (minimal base system)
+- **Active internet connection**
+- **User account with sudo privileges**
+- **2GB+ free disk space**
+
+### Installation
+
+```bash
+# Clone and run
+git clone https://github.com/gandromidas/debianinstaller.git
+cd debianinstaller
+./install.sh
+```
+
+**One-Click Setup:** The installer handles everything automatically - just select your preferred mode and let it configure your system.
+
+### Installation Modes
+
+| Mode | Use Case | Description |
+|------|----------|-------------|
+| **Desktop** | General desktop use | Full-featured setup with all recommended packages |
+| **Server** | Headless deployments | Docker, SSH, server utilities |
+
+### Command-Line Options
+
+```bash
+./install.sh [OPTIONS]
+
+OPTIONS:
+  -h, --help      Show help message
+  -v, --verbose   Enable detailed output
+  -q, --quiet     Minimal output mode
+  -d, --dry-run   Preview changes only
+```
+
+### Installation Experience
+
+The installer provides a professional, user-friendly experience:
+
+```
+=====================================================
+          WELCOME TO DEBIAN INSTALLER                
+=====================================================
+This script will set up your Debian-based system with all the essentials!
+
+Choose your installation mode:
+  1) Desktop - Full desktop setup
+  2) Server  - Minimal server setup
+  3) Exit    - Cancel installation
+
+Enter your choice [1-3]: 1
+✓ Selected: Desktop installation
+```
+
+---
+
+## 📦 Package Management
+
+### Smart Installation System
+
+- **Package Availability Checking**: Verifies package availability before installation
+- **Automatic Fallback**: GitHub releases for missing packages (eza, fastfetch, ripgrep, fd)
+- **Version Management**: Always installs latest stable versions
+- **Architecture Support**: Multi-architecture package detection
+
+### Enhanced Package Tracking
+
+```
+==================== Installation Summary ====================
+Total execution time: 1m 35s
+
+✓ Successfully Installed Packages (24):
+  curl
+  git
+  fastfetch
+  ucaresystem-core
+
+✗ Failed Package Installations (0):
+============================================================
+```
+
+### Package Sources
+
+- **Official Repositories**: Primary source via apt package manager
+- **GitHub Releases**: Automatic fallback for missing packages
+- **Flatpak**: Modern sandboxed applications (Faugus Launcher)
+- **Direct Downloads**: Vendor-specific packages (Discord, Starship)
+
+---
+
+## 🔧 Configuration & Customization
+
+### Shell Environment
+
+- **ZSH Configuration**: Modern shell with Oh-My-Zsh framework
+- **Starship Prompt**: Beautiful, informative prompt system
+- **Productivity Plugins**: Autosuggestions, syntax highlighting
+- **Custom Aliases**: Enhanced command shortcuts
+
+### Desktop Integration
+
+- **Universal Shortcuts**: Meta+Enter for terminal, Meta+Q to close windows
+- **Theme Optimization**: Dark mode and visual enhancements
+- **Performance Tuning**: Desktop-specific optimizations
+- **Service Management**: Essential system services configuration
+
+### Security Configuration
+
+- **Firewall Setup**: UFW with secure default policies
+- **SSH Hardening**: Fail2ban brute-force protection
+- **System Updates**: Automatic security update configuration
+- **User Permissions**: Proper sudo and access control
+
+---
+
+## 🎮 Gaming Mode Details
+
+### Gaming Stack
+
+| Component | Source | Purpose |
+|-----------|--------|---------|
+| **Steam** | Repository | Native gaming platform |
+| **Faugus Launcher** | Flatpak | Modern game launcher |
+| **GameMode** | Repository | Performance optimization |
+| **MangoHud** | Repository | FPS overlay |
+| **Discord** | Direct Download | Gaming communication |
+| **Wine** | Repository | Windows compatibility |
+| **ProtonPlus** | Flatpak | Proton-GE management |
+
+### Performance Features
+
+- **GameMode**: Automatic CPU/GPU optimization during gaming
+- **MangoHud**: Real-time FPS, temperature, and system stats overlay
+- **Vulkan Tools**: Graphics API utilities and diagnostics
+- **Wine Integration**: Windows game compatibility with optimized configuration
+
+---
+
+## 📁 Project Structure
+
+```
+debianinstaller/
+├── install.sh              # Main installation script
+├── scripts/                # Core functionality modules
+│   ├── common.sh          # Shared functions and utilities
+│   ├── programs.sh        # Package installation logic
+│   ├── shell_setup.sh     # ZSH and terminal configuration
+│   ├── gaming_mode.sh     # Gaming mode setup
+│   ├── shortcuts.sh       # Desktop environment shortcuts
+│   ├── fail2ban.sh        # Security configuration
+│   ├── system_services.sh  # Service management
+│   ├── maintenance.sh      # System cleanup tasks
+│   └── apply_configs.sh   # Configuration application
+├── configs/                # Configuration files
+│   ├── .zshrc             # ZSH configuration
+│   ├── starship.toml      # Starship prompt config
+│   └── MangoHud.conf      # Gaming overlay config
+└── README.md              # This documentation
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Development Guidelines
+
+1. **Distribution Compatibility**: Ensure changes work across all supported distributions
+2. **Error Handling**: Implement robust error handling and user feedback
+3. **Documentation**: Update documentation for new features
+4. **Testing**: Test on multiple distributions when possible
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Arch Linux Community**: For inspiration and best practices
+- **Debian Project**: For the stable foundation
+- **Ubuntu Community**: For distribution-specific insights
+- **Linux Mint Team**: For desktop environment expertise
+- **Zorin OS Team**: For user experience innovations
+- **Pop!_OS Team**: For modern desktop approaches
+
+---
+
+## 📞 Support
+
+If you encounter any issues:
+
+1. Check the [Issues](https://github.com/GAndromidas/debianinstaller/issues) page
+2. Create a new issue with details about your system
+3. Include the installation log from `~/.debianinstaller.log`
+
+---
+
+<div align="center">
+
+**⭐ Star this repository if you find it helpful!**
+
+Made with ❤️ for the Debian-based Linux community
+
+</div>
+
+
