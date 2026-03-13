@@ -180,6 +180,30 @@ show_menu() {
     done
 }
 
+# Suppress Python warnings during package installation
+suppress_python_warnings() {
+    export PYTHONWARNINGS="ignore"
+    export PYTHONPATH=""
+    # Also suppress warnings in stderr for any Python processes
+    exec 3>&2 2> >(grep -v "SyntaxWarning\|invalid escape sequence" >&3)
+}
+
+# Restore stderr
+restore_stderr() {
+    exec 2>&3 3>&-
+}
+
+# Suppress verbose apt output for cleaner installation
+suppress_apt_output() {
+    export APT_OPTIONS="-qq -o=Dpkg::Use-Pty=0 -o=APT::Color=0"
+}
+
+# Function to restore environment after installation
+cleanup_install_environment() {
+    unset PYTHONWARNINGS
+    unset APT_OPTIONS
+}
+
 apt_install() {
     local pkgs=("$@")
     local to_install=()
@@ -202,7 +226,7 @@ apt_install() {
     suppress_apt_output
     
     ui_info "Installing ${#to_install[@]} packages via apt..."
-    if sudo apt-get install -y -qq "${to_install[@]}"; then
+    if sudo apt-get install -y -qq "${to_install[@]}" 2>/dev/null; then
         ui_success "All packages installed successfully"
     else
         # If batch install fails, try individual packages
@@ -224,12 +248,6 @@ apt_install() {
     
     # Restore Python warnings and clean up environment
     cleanup_install_environment
-}
-
-# Function to restore environment after installation
-cleanup_install_environment() {
-    unset PYTHONWARNINGS
-    unset APT_OPTIONS
 }
 
 # --- Summary & Finalization ---

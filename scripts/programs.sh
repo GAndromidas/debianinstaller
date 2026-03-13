@@ -11,6 +11,11 @@ else
     exit 1
 fi
 
+# Ensure distribution is detected and variables are available
+if [ -z "$DISTRO_NAME" ]; then
+    detect_distribution
+fi
+
 # --- Package Definitions ---
 
 # A comprehensive list of packages for a full-featured desktop environment.
