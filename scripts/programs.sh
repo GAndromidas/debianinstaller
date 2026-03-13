@@ -373,50 +373,33 @@ install_ucaresystem_core() {
         return 0
     fi
     
-    local temp_dir=$(mktemp -d)
-    local arch=$(uname -m)
-    local download_url=""
-    
     # Get latest release info
     local latest_release=$(curl -s "https://api.github.com/repos/Utappia/uCareSystem/releases/latest" | grep -o '"tag_name": "[^"]*' | cut -d'"' -f4)
     
     if [ -z "$latest_release" ]; then
         ui_error "Failed to fetch latest ucaresystem-core release."
-        rm -rf "$temp_dir"
         return 1
     fi
     
     ui_info "Downloading ucaresystem-core ${latest_release}..."
     
-    # Determine architecture and download URL
-    case "$arch" in
-        x86_64)
-            download_url="https://github.com/Utappia/uCareSystem/releases/download/${latest_release}/ucaresystem-core-${latest_release#v}-linux-x64.tar.gz"
-            ;;
-        aarch64|arm64)
-            download_url="https://github.com/Utappia/uCareSystem/releases/download/${latest_release}/ucaresystem-core-${latest_release#v}-linux-arm64.tar.gz"
-            ;;
-        *)
-            ui_error "Unsupported architecture: $arch"
-            rm -rf "$temp_dir"
-            return 1
-            ;;
-    esac
+    # Use the .deb package for Ubuntu/Debian systems
+    local version_number="${latest_release#v}"
+    local download_url="https://github.com/Utappia/uCareSystem/releases/download/${latest_release}/ucaresystem-core_${version_number}_all.deb"
+    local temp_deb="/tmp/ucaresystem-core_${version_number}_all.deb"
     
-    # Download and extract
-    if curl -L "$download_url" -o "$temp_dir/ucaresystem-core.tar.gz" && \
-       tar -xzf "$temp_dir/ucaresystem-core.tar.gz" -C "$temp_dir" && \
-       sudo mv "$temp_dir/ucaresystem-core" /usr/local/bin/ && \
-       sudo chmod +x /usr/local/bin/ucaresystem-core; then
+    # Download and install the .deb package
+    if curl -L "$download_url" -o "$temp_deb" && \
+       [ -f "$temp_deb" ] && \
+       sudo dpkg -i "$temp_deb" 2>/dev/null; then
         ui_success "ucaresystem-core installed successfully."
+        rm -f "$temp_deb"
+        return 0
     else
         ui_error "Failed to install ucaresystem-core."
-        rm -rf "$temp_dir"
+        rm -f "$temp_deb"
         return 1
     fi
-    
-    # Cleanup
-    rm -rf "$temp_dir"
 }
 
 # Function to install packages with fallback support
