@@ -135,20 +135,81 @@ is_package_available() {
 install_package_smart() {
     local packages=("$@")
     local available_packages=()
+    local alternative_packages=()
     
     for pkg in "${packages[@]}"; do
         if is_package_available "$pkg"; then
             available_packages+=("$pkg")
         else
-            ui_warn "Package '$pkg' not available on $DISTRO_NAME $DISTRO_VERSION - skipping"
+            # Check for distribution-specific alternatives
+            local alternative
+            alternative=$(get_package_alternative "$pkg")
+            if [ -n "$alternative" ] && is_package_available "$alternative"; then
+                ui_info "Package '$pkg' not available, using alternative '$alternative' on $DISTRO_NAME"
+                available_packages+=("$alternative")
+                alternative_packages+=("$pkg:$alternative")
+            else
+                ui_warn "Package '$pkg' not available on $DISTRO_NAME $DISTRO_VERSION - skipping"
+            fi
         fi
     done
     
     if [ ${#available_packages[@]} -gt 0 ]; then
         apt_install "${available_packages[@]}"
+        # Log alternatives for user reference
+        for alt in "${alternative_packages[@]}"; do
+            local original="${alt%%:*}"
+            local replacement="${alt##*:}"
+            log_both "Package alternative used: $original → $replacement"
+        done
     else
         ui_warn "No packages from the list are available on this distribution"
     fi
+}
+
+# Function to get distribution-specific package alternatives
+get_package_alternative() {
+    local package="$1"
+    
+    case "$package" in
+        "ubuntu-restricted-extras")
+            if [ "$IS_MINT" = true ]; then
+                echo "mint-meta-codecs"
+            elif [ "$IS_ZORIN" = true ]; then
+                echo "zorin-os-restricted-extras"
+            elif [ "$IS_POP_OS" = true ]; then
+                echo "pop-codecs"
+            else
+                echo ""
+            fi
+            ;;
+        "firmware-linux")
+            if [ "$IS_UBUNTU" = true ]; then
+                echo "linux-firmware"
+            elif [ "$IS_MINT" = true ]; then
+                echo "linux-firmware"
+            else
+                echo ""
+            fi
+            ;;
+        "android-tools-adb")
+            if ! is_package_available "$package" && is_package_available "adb"; then
+                echo "adb"
+            else
+                echo ""
+            fi
+            ;;
+        "android-tools-fastboot")
+            if ! is_package_available "$package" && is_package_available "fastboot"; then
+                echo "fastboot"
+            else
+                echo ""
+            fi
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
 }
 
 show_menu() {
@@ -214,6 +275,8 @@ cleanup_install_environment() {
 apt_install_single() {
     local pkg="$1"
     local verbose="${2:-false}"
+    local max_retries=3
+    local retry_count=0
     
     if [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ]; then
         printf "${CYAN}Installing APT package:${RESET} %-30s" "$pkg"
@@ -225,20 +288,30 @@ apt_install_single() {
         return 0
     fi
     
-    local output
-    if output=$(sudo apt-get install -y "$pkg" 2>&1); then
-        [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] && printf "${GREEN} ✓ Success${RESET}\n"
-        INSTALLED_PACKAGES+=("$pkg")
-        return 0
-    else
-        [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] && printf "${RED} ✗ Failed${RESET}\n"
-        # Show output if verbose or if it's a critical error
-        if [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] || [[ "$output" == *"E:"* ]] || [[ "$output" == *"Error:"* ]]; then
-            echo "$output" | sed 's/^/    /'
+    while [ $retry_count -lt $max_retries ]; do
+        local output
+        if output=$(sudo apt-get install -y "$pkg" 2>&1); then
+            [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] && printf "${GREEN} ✓ Success${RESET}\n"
+            INSTALLED_PACKAGES+=("$pkg")
+            return 0
+        else
+            retry_count=$((retry_count + 1))
+            if [ $retry_count -lt $max_retries ]; then
+                [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] && printf "${YELLOW} ! Retrying ($retry_count/$max_retries)...${RESET}\n"
+                sleep 3
+                # Update package lists before retry
+                sudo apt-get update -qq >/dev/null 2>&1 || true
+            else
+                [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] && printf "${RED} ✗ Failed after $max_retries attempts${RESET}\n"
+                # Show output if verbose or if it's a critical error
+                if [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] || [[ "$output" == *"E:"* ]] || [[ "$output" == *"Error:"* ]]; then
+                    echo "$output" | sed 's/^/    /'
+                fi
+                FAILED_PACKAGES+=("$pkg")
+                return 1
+            fi
         fi
-        FAILED_PACKAGES+=("$pkg")
-        return 1
-    fi
+    done
 }
 
 # Main apt_install function with batch installation and fallback

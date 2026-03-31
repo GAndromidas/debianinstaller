@@ -91,7 +91,7 @@ configure_mangohud() {
 
 # --- Function to install Faugus Launcher from Flatpak ---
 install_faugus_launcher() {
-    if flatpak list | grep -q "com.faugus.Launcher"; then
+    if flatpak list | grep -q "io.github.Faugus.faugus-launcher"; then
         ui_success "Faugus Launcher is already installed."
         return 0
     fi
@@ -109,7 +109,7 @@ install_faugus_launcher() {
     fi
 
     # Install Faugus Launcher
-    if flatpak install -y flathub com.faugus.Launcher; then
+    if flatpak install -y flathub io.github.Faugus.faugus-launcher; then
         ui_success "Faugus Launcher installed successfully."
         INSTALLED_PACKAGES+=("Faugus Launcher")
     else

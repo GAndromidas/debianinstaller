@@ -100,13 +100,30 @@ setup_distribution_repos() {
         # Add universe and multiverse repositories if not already enabled
         ui_info "Ensuring Ubuntu repositories are enabled..."
         
-        # Check if we need to add repositories
-        if ! grep -q "universe" /etc/apt/sources.list 2>/dev/null; then
-            sudo add-apt-repository universe -y 2>/dev/null || ui_warn "Could not add universe repository"
+        # Check Ubuntu version for specific handling
+        local ubuntu_version=""
+        if [ "$IS_UBUNTU" = true ]; then
+            ubuntu_version="$DISTRO_VERSION"
         fi
         
-        if ! grep -q "multiverse" /etc/apt/sources.list 2>/dev/null; then
+        # For Ubuntu 26.04+, ensure proper repository handling
+        if [[ "$ubuntu_version" =~ ^(26\.04|26\.10|27\.04) ]]; then
+            ui_info "Ubuntu 26.04+ detected - using enhanced repository configuration"
+            # Ubuntu 26.04+ should have universe and multiverse enabled by default
+            # but we'll verify and add them if needed
+        fi
+        
+        # Check if we need to add repositories
+        if ! grep -q "universe" /etc/apt/sources.list 2>/dev/null && ! grep -q "universe" /etc/apt/sources.list.d/* 2>/dev/null; then
+            sudo add-apt-repository universe -y 2>/dev/null || ui_warn "Could not add universe repository"
+        else
+            ui_info "Universe repository is already enabled"
+        fi
+        
+        if ! grep -q "multiverse" /etc/apt/sources.list 2>/dev/null && ! grep -q "multiverse" /etc/apt/sources.list.d/* 2>/dev/null; then
             sudo add-apt-repository multiverse -y 2>/dev/null || ui_warn "Could not add multiverse repository"
+        else
+            ui_info "Multiverse repository is already enabled"
         fi
         
         # Update package list after adding repositories

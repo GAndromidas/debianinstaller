@@ -115,7 +115,7 @@ Transform your system into a gaming powerhouse with one click:
 
 ### Distributions
 - ✅ **Debian** 12+ (Bookworm, Trixie)
-- ✅ **Ubuntu** 22.04+ (Jammy, Noble, Mantic)
+- ✅ **Ubuntu** 22.04+ (Jammy, Noble, Mantic, Resolute Raccoon)
 - ✅ **Linux Mint** 21.x, 22.x (Vanessa, Vera, Victoria, Wilma)
 - ✅ **Zorin OS** 16.x, 17.x
 - ✅ **Pop!_OS** 22.04+

@@ -457,6 +457,75 @@ install_nerd_fonts() {
     fi
 }
 
+# Function to add repository GPG keys with distribution-specific handling
+add_repository_key() {
+    local key_url="$1"
+    local key_name="$2"
+    local key_path="$3"
+    
+    if [ "$DRY_RUN" = true ]; then
+        ui_info "[DRY-RUN] Would add GPG key: $key_name"
+        return 0
+    fi
+    
+    ui_info "Adding GPG key for $key_name..."
+    
+    # Use different methods based on distribution
+    if [ "$IS_DEBIAN" = true ]; then
+        # Debian prefers /usr/share/keyrings directory
+        if curl -fsSL "$key_url" | sudo gpg --dearmor -o "$key_path"; then
+            ui_success "GPG key added successfully for $key_name"
+            return 0
+        fi
+    elif [ "$IS_UBUNTU" = true ] || [ "$IS_MINT" = true ] || [ "$IS_ZORIN" = true ]; then
+        # Ubuntu-based distributions
+        if curl -fsSL "$key_url" | sudo gpg --dearmor -o "$key_path"; then
+            ui_success "GPG key added successfully for $key_name"
+            return 0
+        fi
+    elif [ "$IS_POP_OS" = true ]; then
+        # Pop!_OS specific handling
+        if curl -fsSL "$key_url" | sudo gpg --dearmor -o "$key_path"; then
+            ui_success "GPG key added successfully for $key_name"
+            return 0
+        fi
+    else
+        # Fallback method
+        if curl -fsSL "$key_url" | sudo apt-key add - >/dev/null 2>&1; then
+            ui_success "GPG key added successfully for $key_name (legacy method)"
+            return 0
+        fi
+    fi
+    
+    ui_error "Failed to add GPG key for $key_name"
+    ERRORS+=("GPG key addition failed: $key_name")
+    return 1
+}
+
+# Function to get distribution-specific Docker repository
+get_docker_repository() {
+    if [ "$IS_POP_OS" = true ]; then
+        # Pop!_OS has its own Docker repository
+        echo "https://download.docker.com/linux/pop-os"
+        return 0
+    elif [ "$IS_UBUNTU" = true ]; then
+        echo "https://download.docker.com/linux/ubuntu"
+        return 0
+    elif [ "$IS_MINT" = true ]; then
+        # Linux Mint can use Ubuntu repository but with proper handling
+        echo "https://download.docker.com/linux/ubuntu"
+        return 0
+    elif [ "$IS_ZORIN" = true ]; then
+        # Zorin OS uses Ubuntu repository
+        echo "https://download.docker.com/linux/ubuntu"
+        return 0
+    else
+        # Default to Ubuntu for other Debian-based
+        echo "https://download.docker.com/linux/ubuntu"
+        return 0
+    fi
+}
+
 # Function to install Docker
 install_docker() {
     if command -v docker >/dev/null 2>&1; then
@@ -470,11 +539,34 @@ install_docker() {
         return 0
     fi
 
-    # Add Docker's official GPG key:
-    if curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg; then
+    # Get distribution-specific repository and key
+    local docker_repo
+    docker_repo=$(get_docker_repository)
+    local docker_key_url="${docker_repo}/gpg"
+    local docker_key_path="/usr/share/keyrings/docker-archive-keyring.gpg"
+    
+    # Add Docker's official GPG key using distribution-specific method
+    if add_repository_key "$docker_key_url" "Docker" "$docker_key_path"; then
+        # Get the Ubuntu codename, with fallback for newer releases
+        local ubuntu_codename
+        ubuntu_codename=$(lsb_release -cs 2>/dev/null || echo "noble")
+        
+        # Special handling for Ubuntu 26.04+ if Docker doesn't support codename yet
+        if [ "$ubuntu_codename" = "resolute" ]; then
+            ui_info "Ubuntu 26.04 'resolute' detected - checking Docker repository support..."
+            # Try to check if Docker supports this codename by testing repository
+            if curl -fsSL "${docker_repo}/dists/$ubuntu_codename/Release" >/dev/null 2>&1; then
+                ui_success "Docker repository supports Ubuntu 26.04 'resolute'"
+            else
+                ui_warn "Docker repository doesn't yet support Ubuntu 26.04, using Ubuntu 24.04 'noble' as fallback"
+                ubuntu_codename="noble"
+            fi
+        fi
+        
+        # Add Docker repository with distribution-specific handling
         echo \
-            "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-            $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            "deb [arch=$(dpkg --print-architecture) signed-by=$docker_key_path] $docker_repo \
+            $ubuntu_codename stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sudo apt-get update
         apt_install docker-ce docker-ce-cli containerd.io
         sudo usermod -aG docker "$USER"

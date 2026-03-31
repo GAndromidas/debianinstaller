@@ -140,31 +140,42 @@ check_distribution_compatibility() {
   local warning_msg=""
   
   if [ "$IS_DEBIAN" = true ]; then
-    if [[ "$DISTRO_VERSION" =~ ^(12|13)$ ]]; then
+    # Support Debian 12+ with future-proofing
+    if [[ "$DISTRO_VERSION" =~ ^(12|13|14|15)$ ]] || [[ "$DISTRO_VERSION" =~ ^[1-9][0-9]$ ]]; then
       supported=true
     else
       warning_msg="Debian $DISTRO_VERSION may not be fully supported"
     fi
   elif [ "$IS_UBUNTU" = true ]; then
-    if [[ "$DISTRO_VERSION" =~ ^(22\.04|24\.04|24\.10|25\.04|25\.10|26\.04)$ ]]; then
+    # Support Ubuntu 22.04+ with future-proofing for future LTS versions
+    if [[ "$DISTRO_VERSION" =~ ^(22\.04|24\.04|24\.10|25\.04|25\.10|26\.04|26\.10|27\.04|27\.10|28\.04)$ ]] || \
+       [[ "$DISTRO_VERSION" =~ ^[2-9][0-9]\.04$ ]] || \
+       [[ "$DISTRO_VERSION" =~ ^[2-9][0-9]\.10$ ]]; then
       supported=true
     else
       warning_msg="Ubuntu $DISTRO_VERSION may not be fully supported"
     fi
   elif [ "$IS_MINT" = true ]; then
-    if [[ "$DISTRO_VERSION" =~ ^(21\.x|22\.x)$ ]]; then
+    # Support Linux Mint 21.x+ with future-proofing
+    if [[ "$DISTRO_VERSION" =~ ^(21\.x|22\.x|23\.x|24\.x)$ ]] || \
+       [[ "$DISTRO_VERSION" =~ ^[2-9][0-9]\.x$ ]]; then
       supported=true
     else
       warning_msg="Linux Mint $DISTRO_VERSION may not be fully supported"
     fi
   elif [ "$IS_ZORIN" = true ]; then
-    if [[ "$DISTRO_VERSION" =~ ^(16|17|18)$ ]]; then
+    # Support Zorin OS 16.x+ with future-proofing
+    if [[ "$DISTRO_VERSION" =~ ^(16|17|18|19|20)$ ]] || \
+       [[ "$DISTRO_VERSION" =~ ^[1-9][0-9]$ ]]; then
       supported=true
     else
       warning_msg="Zorin OS $DISTRO_VERSION may not be fully supported"
     fi
   elif [ "$IS_POP_OS" = true ]; then
-    if [[ "$DISTRO_VERSION" =~ ^(22\.04|24\.04)$ ]]; then
+    # Support Pop!_OS 22.04+ with future-proofing
+    if [[ "$DISTRO_VERSION" =~ ^(22\.04|24\.04|24\.10|25\.04|25\.10|26\.04|26\.10|27\.04)$ ]] || \
+       [[ "$DISTRO_VERSION" =~ ^[2-9][0-9]\.04$ ]] || \
+       [[ "$DISTRO_VERSION" =~ ^[2-9][0-9]\.10$ ]]; then
       supported=true
     else
       warning_msg="Pop!_OS $DISTRO_VERSION may not be fully supported"

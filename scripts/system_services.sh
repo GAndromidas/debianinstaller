@@ -101,7 +101,27 @@ apply_distribution_optimizations() {
         # Disable unnecessary services for better performance
         ui_info "Optimizing Ubuntu-based system services..."
         sudo systemctl disable snapd.seeded.service 2>/dev/null || true
-        sudo systemctl disable snapd.autoimport.service 2>/dev/null || true
+        
+        # Ubuntu 26.04+ specific optimizations
+        if [[ "$DISTRO_VERSION" =~ ^(26\.04|26\.10|27\.04) ]]; then
+            ui_info "Applying Ubuntu 26.04+ specific optimizations..."
+            
+            # Check if snap is present and handle PipeWire snap transition
+            if command -v snap >/dev/null 2>&1; then
+                ui_info "Snap detected - Ubuntu 26.04+ may have PipeWire as snap"
+                # Note: In Ubuntu 26.04, removing snapd may break audio if PipeWire is snap-based
+                # We'll keep snapd but optimize its services
+                sudo systemctl disable snapd.autoimport.service 2>/dev/null || true
+                sudo systemctl disable snapd.refresh.timer 2>/dev/null || true
+            fi
+            
+            # Ubuntu 26.04 uses cgroup v2 only, ensure proper configuration
+            if [ -f /sys/fs/cgroup/cgroup.controllers ]; then
+                ui_info "cgroup v2 detected - Ubuntu 26.04 compatible"
+            else
+                ui_warn "cgroup v1 detected - Ubuntu 26.04 requires cgroup v2"
+            fi
+        fi
     fi
     
     # Debian optimizations
