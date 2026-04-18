@@ -25,7 +25,6 @@ get_desktop_packages() {
         "android-tools-adb"
         "android-tools-fastboot"
         "bat"
-        "bleachbit"
         "btop"
         "cmatrix"
         "cpufrequtils" # CLI tool for CPU scaling

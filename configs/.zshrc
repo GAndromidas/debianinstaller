@@ -68,14 +68,42 @@ export FZF_CTRL_R_OPTS="
   --preview-window=down:3:wrap
 "
 
+# Clean System
+
+clean() {
+  echo "🧹 Starting System Deep Clean..."
+
+  echo "→ Removing unnecessary dependencies..."
+  sudo apt-get autoremove --purge -y
+
+  echo "→ Clearing APT cache..."
+  sudo apt-get autoclean -y
+  sudo apt-get clean
+
+  echo "→ Removing orphaned packages..."
+  if command -v deborphan >/dev/null 2>&1; then
+    local orphans=$(deborphan)
+    if [[ -n "$orphans" ]]; then
+      sudo apt-get purge -y $orphans
+    fi
+  fi
+
+  echo "→ Vacuuming systemd journal (keep 3 days)..."
+  sudo journalctl --vacuum-time=3d
+
+  echo "→ Wiping thumbnail & browser caches..."
+  rm -rf ~/.cache/thumbnails/* 2>/dev/null
+  find ~/.cache/mozilla/firefox -name "cache2" -type d -exec rm -rf {} + 2>/dev/null
+
+  echo "✅ System clean complete!"
+}
+
 # Aliases
 
 # System maintenance aliases
 alias sync='sudo apt update'
 alias update='sudo apt update && sudo apt upgrade'
 alias care='sudo ucaresystem-core'
-alias clean='sudo apt autoremove && sudo apt clean'
-alias cache='rm -rf ~/.cache/*'
 alias microcode='grep . /sys/devices/system/cpu/vulnerabilities/*'
 alias sr='sudo systemctl reboot'
 alias ss='sudo systemctl poweroff'
