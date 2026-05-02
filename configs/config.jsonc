@@ -4,9 +4,12 @@
         "type": "file"
     },
     "display": {
-        "separator": "  ",
+        "separator": " - ",
         "color": {
             "keys": "light_blue"
+        },
+        "percent": {
+            "type": 2
         }
     },
     "modules": [
@@ -52,7 +55,8 @@
         },
         {
             "type": "packages",
-            "key": " "
+            "key": " ",
+            "format": "{1} (apt)"
         },
         "break",
         {
@@ -81,7 +85,8 @@
         },
         {
             "type": "disk",
-            "key": " "
+            "key": " ",
+            "toggle": true // This ensures all mounted drives (USB/HDD) are shown
         },
         {
             "type": "display",
@@ -105,7 +110,7 @@
             "type": "command",
             "key": " 󰚰",
             "text": "apt list --upgradable 2>/dev/null | grep -c '/'",
-            "keyColor": "34"
+            "keyColor": "light_blue"
         },
         "break",
         {
