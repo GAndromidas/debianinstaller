@@ -180,9 +180,9 @@ ui_confirm() {
 
     if supports_gum; then
         if [ -n "$description" ]; then
-            gum style --foreground "$GUM_WARN" "$description"
+            gum style --foreground "$GUM_WARN" "$description" >&2 2>/dev/null || true
         fi
-        if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "$question"; then
+        if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "$question" >/dev/tty; then
             return 0
         else
             return 1
@@ -361,7 +361,7 @@ gum_confirm() {
         if [ -n "$description" ]; then
             gum style --foreground "$GUM_WARN" "$description" >&2 2>/dev/null || true
         fi
-        if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "$question"; then
+        if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "$question" >/dev/tty; then
             return 0
         else
             return 1
@@ -928,7 +928,7 @@ prompt_reboot() {
     echo "" >&2
     gum style --foreground "$GUM_WARN" "Ready to reboot your system?" >&2 2>/dev/null || true
     echo "" >&2
-    if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "Reboot now?"; then
+    if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "Reboot now?" >/dev/tty; then
       echo ""
       echo -e "${THEME_TEXT}Rebooting your system...${RESET}"
       echo -e "${THEME_HEADER}Thank you for using Debian Installer!${RESET}"
