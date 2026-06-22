@@ -135,7 +135,11 @@ fi
 # ============================================================================
 if ! declare -f prompt_reboot >/dev/null 2>&1; then
 prompt_reboot() {
-  simple_banner "Reboot System"
+  echo ""
+  echo -e "${THEME_BORDER}============================================${RESET}"
+  echo -e "${THEME_HEADER}            Reboot System${RESET}"
+  echo -e "${THEME_BORDER}============================================${RESET}"
+  echo ""
   echo -e "${THEME_TEXT}Congratulations! Your Debian-based system is now fully configured!${RESET}"
   echo ""
   echo -e "${THEME_TEXT}What happens after reboot:${RESET}"
