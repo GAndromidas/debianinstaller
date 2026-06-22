@@ -140,7 +140,7 @@ install_protonplus() {
 step "Gaming Mode Setup"
 simple_banner "Gaming Mode"
 
-local description="This includes popular tools like Steam, Discord, Wine, GameMode, MangoHud, Faugus Launcher, and more."
+description="This includes popular tools like Steam, Discord, Wine, GameMode, MangoHud, Faugus Launcher, and more."
 
 if ! gum_confirm "Enable Gaming Mode?" "$description"; then
     ui_info "Gaming Mode skipped."
