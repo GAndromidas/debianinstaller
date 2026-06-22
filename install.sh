@@ -237,7 +237,6 @@ if ! command -v gum >/dev/null 2>&1; then
   else
     log_to_file "Gum not in repos, trying GitHub release..."
     GUM_VERSION="0.14.5"
-    local gum_arch
     case "$(uname -m)" in
       x86_64) gum_arch="amd64" ;;
       aarch64) gum_arch="arm64" ;;
