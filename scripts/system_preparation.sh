@@ -160,9 +160,52 @@ setup_distribution_repos() {
     fi
 }
 
+# --- Function to Install yq (YAML parser) ---
+install_yq() {
+    if command -v yq &>/dev/null; then
+        ui_info "yq is already installed."
+        return 0
+    fi
+
+    ui_info "Installing yq for YAML configuration parsing..."
+    if [ "$DRY_RUN" = true ]; then
+        ui_info "[DRY-RUN] Would install yq from GitHub."
+        return 0
+    fi
+
+    local arch
+    case "$(uname -m)" in
+        x86_64) arch="amd64" ;;
+        aarch64) arch="arm64" ;;
+        *)
+            ui_warn "Unsupported architecture for yq: $(uname -m). Trying pip..."
+            if pip3 install yq 2>/dev/null; then
+                ui_success "yq installed via pip."
+                return 0
+            fi
+            ui_warn "yq installation failed. YAML features will be unavailable."
+            return 1
+            ;;
+    esac
+
+    local yq_url="https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${arch}"
+    if wget -q -O /usr/local/bin/yq "$yq_url" 2>/dev/null || \
+       curl -sL -o /usr/local/bin/yq "$yq_url" 2>/dev/null; then
+        sudo chmod +x /usr/local/bin/yq
+        if command -v yq &>/dev/null; then
+            ui_success "yq installed successfully."
+            return 0
+        fi
+    fi
+
+    ui_warn "Failed to install yq. YAML features will be unavailable."
+    return 1
+}
+
 # --- Main Execution ---
 update_and_upgrade
 install_core_dependencies
+install_yq
 setup_distribution_repos
 
 # Flatpak is a desktop-specific feature, so we only run it in that mode.

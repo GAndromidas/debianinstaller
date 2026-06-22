@@ -1,0 +1,31 @@
+# Gaming Mode packages for Debian-based systems
+
+# Apt packages for gaming setup
+apt:
+  packages:
+    - name: gamemode
+      description: "GameMode daemon for performance optimization"
+    - name: mangohud
+      description: "Vulkan/OpenGL overlay for monitoring FPS and more"
+    - name: steam
+      description: "Digital distribution platform for games"
+    - name: steam-installer
+      description: "Steam installer (fallback package name)"
+    - name: wine
+      description: "Compatibility layer for running Windows applications"
+    - name: wine32
+      description: "32-bit Wine support"
+    - name: wine64
+      description: "64-bit Wine support"
+    - name: vulkan-tools
+      description: "Vulkan information and tools"
+
+# Flatpak applications for gaming
+flatpak:
+  apps:
+    - name: com.heroicgameslauncher.hgl
+      description: "Heroic Games Launcher for Epic Games Store"
+    - name: io.github.Faugus.faugus-launcher
+      description: "Faugus Launcher for game management"
+    - name: com.vysp3r.ProtonPlus
+      description: "ProtonPlus for installing Proton-GE"
