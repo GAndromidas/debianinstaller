@@ -394,7 +394,9 @@ install_apt_packages
 install_fallback_packages
 install_ucaresystem_core
 install_nerd_fonts
-install_flatpak_apps
+if [[ "$INSTALL_MODE" != "server" ]]; then
+    install_flatpak_apps
+fi
 
 if [[ "$INSTALL_MODE" == "server" ]]; then
     if install_docker; then
