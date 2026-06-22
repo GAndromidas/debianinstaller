@@ -96,7 +96,16 @@ load_state_cache
   echo ""
 } > "$INSTALL_LOG"
 
-# Source common.sh (contains all UI, theme, dashboard, and distribution functions)
+# Source modular library files (order matters — each may depend on previous)
+source "$SCRIPTS_DIR/lib/core.sh"
+source "$SCRIPTS_DIR/lib/ui.sh"
+source "$SCRIPTS_DIR/lib/system.sh"
+source "$SCRIPTS_DIR/lib/package.sh"
+source "$SCRIPTS_DIR/lib/config.sh"
+source "$SCRIPTS_DIR/lib/dashboard.sh"
+DEBIAN_INSTALLER_LIBS_LOADED=1
+
+# Source legacy compatibility layer (defines show_menu, prompt_reboot, etc.)
 source "$SCRIPTS_DIR/common.sh"
 
 # Install gum silently for enhanced UI experience
