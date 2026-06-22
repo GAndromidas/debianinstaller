@@ -229,6 +229,34 @@ check_distribution_compatibility() {
 
 check_distribution_compatibility
 
+# Install gum for enhanced UI experience
+if ! command -v gum >/dev/null 2>&1; then
+  log_to_file "Installing gum for enhanced UI experience..."
+  if sudo apt-get install -y -qq gum >/dev/null 2>&1; then
+    log_to_file "Gum installed successfully"
+  else
+    log_to_file "Gum not in repos, trying GitHub release..."
+    GUM_VERSION="0.14.5"
+    local gum_arch
+    case "$(uname -m)" in
+      x86_64) gum_arch="amd64" ;;
+      aarch64) gum_arch="arm64" ;;
+      *) gum_arch="amd64" ;;
+    esac
+    if command -v curl >/dev/null 2>&1; then
+      curl -L -o /tmp/gum.deb "https://github.com/charmbracelet/gum/releases/download/v${GUM_VERSION}/gum_${GUM_VERSION}_${gum_arch}.deb" 2>/dev/null
+    elif command -v wget >/dev/null 2>&1; then
+      wget -q -O /tmp/gum.deb "https://github.com/charmbracelet/gum/releases/download/v${GUM_VERSION}/gum_${GUM_VERSION}_${gum_arch}.deb"
+    fi
+    if [ -f /tmp/gum.deb ] && sudo dpkg -i /tmp/gum.deb >/dev/null 2>&1; then
+      log_to_file "Gum installed from GitHub release"
+    else
+      log_to_file "Failed to install gum, falling back to basic UI"
+    fi
+    rm -f /tmp/gum.deb
+  fi
+fi
+
 show_menu
 
 # Check if INSTALL_MODE was set (user might have exited menu)
@@ -427,16 +455,6 @@ if [ "$DRY_RUN" = false ]; then
   trap 'cleanup_on_error $LINENO; save_log_on_exit' EXIT INT TERM ERR
 else
   trap 'cleanup_on_error $LINENO; save_log_on_exit' EXIT INT TERM ERR
-fi
-
-# Install gum silently for enhanced UI experience
-if ! command -v gum >/dev/null 2>&1; then
-  log_to_file "Installing gum for enhanced UI experience..."
-  if sudo apt-get install -y -qq gum >/dev/null 2>&1; then
-    log_to_file "Gum installed successfully"
-  else
-    log_to_file "Gum not available in repos, falling back to basic UI"
-  fi
 fi
 
 # Function to mark step as completed

@@ -137,13 +137,14 @@ install_protonplus() {
 
 # --- Main Execution ---
 
-# Prompt the user to install gaming tools using a standard text prompt
-echo ""
-ui_info "Optional: Install Gaming Mode?"
-read -rp "This will install Steam, Faugus Launcher, Discord, and other related tools. [Y/n]: " response
-if [[ -n "$response" && ! "$response" =~ ^[Yy]$ ]]; then
-    ui_warn "Gaming Mode setup skipped by user."
-    exit 0
+step "Gaming Mode Setup"
+simple_banner "Gaming Mode"
+
+local description="This includes popular tools like Steam, Discord, Wine, GameMode, MangoHud, Faugus Launcher, and more."
+
+if ! gum_confirm "Enable Gaming Mode?" "$description"; then
+    ui_info "Gaming Mode skipped."
+    return 0
 fi
 
 
