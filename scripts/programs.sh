@@ -86,48 +86,6 @@ determine_package_lists() {
 
 # ===== Fallback Installation Functions =====
 
-install_eza_fallback() {
-    ui_info "Installing eza via GitHub release (fallback method)..."
-    if command -v eza >/dev/null 2>&1; then
-        ui_success "eza is already installed"
-        return 0
-    fi
-    if [ "$DRY_RUN" = true ]; then
-        ui_info "[DRY-RUN] Would install eza via GitHub release"
-        return 0
-    fi
-
-    local latest_version
-    latest_version=$(curl -s "https://api.github.com/repos/eza-community/eza/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")' || echo "v0.18.0")
-    [ -z "$latest_version" ] && latest_version="v0.18.0"
-
-    local arch
-    arch=$(uname -m)
-    case "$arch" in
-        x86_64) arch="x86_64-unknown-linux-gnu" ;;
-        aarch64) arch="aarch64-unknown-linux-gnu" ;;
-        *) ui_warn "Unsupported architecture for eza: $arch"; return 1 ;;
-    esac
-
-    local download_url="https://github.com/eza-community/eza/releases/download/${latest_version}/eza_${arch#v}.tar.gz"
-    local temp_dir="/tmp/eza_install"
-    mkdir -p "$temp_dir"
-
-    if curl -L "$download_url" -o "$temp_dir/eza.tar.gz" && \
-       tar -xzf "$temp_dir/eza.tar.gz" -C "$temp_dir" && \
-       sudo mv "$temp_dir/eza" /usr/local/bin/ && \
-       sudo chmod +x /usr/local/bin/eza; then
-        ui_success "eza installed successfully via GitHub release"
-        INSTALLED_PACKAGES+=("eza")
-    else
-        ui_error "Failed to install eza via GitHub release"
-        ERRORS+=("eza fallback install")
-        rm -rf "$temp_dir"
-        return 1
-    fi
-    rm -rf "$temp_dir"
-}
-
 install_fastfetch_fallback() {
     ui_info "Installing fastfetch via GitHub release (fallback method)..."
     if command -v fastfetch >/dev/null 2>&1; then
@@ -155,7 +113,7 @@ install_fastfetch_fallback() {
     local temp_dir="/tmp/fastfetch_install"
     mkdir -p "$temp_dir"
 
-    if ! curl -L "$download_url" -o "$temp_dir/fastfetch.tar.gz"; then
+    if ! curl -sL "$download_url" -o "$temp_dir/fastfetch.tar.gz" 2>/dev/null; then
         ui_error "Failed to download fastfetch"; rm -rf "$temp_dir"; return 1
     fi
 
@@ -179,84 +137,6 @@ install_fastfetch_fallback() {
     rm -rf "$temp_dir"
 }
 
-install_ripgrep_fallback() {
-    ui_info "Installing ripgrep via GitHub release (fallback method)..."
-    if command -v rg >/dev/null 2>&1; then
-        ui_success "ripgrep is already installed"; return 0
-    fi
-    if [ "$DRY_RUN" = true ]; then
-        ui_info "[DRY-RUN] Would install ripgrep via GitHub release"; return 0
-    fi
-
-    local latest_version
-    latest_version=$(curl -s "https://api.github.com/repos/BurntSushi/ripgrep/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")' || echo "14.1.0")
-    [ -z "$latest_version" ] && latest_version="14.1.0"
-
-    local arch
-    arch=$(uname -m)
-    case "$arch" in
-        x86_64) arch="x86_64-unknown-linux-musl" ;;
-        aarch64) arch="aarch64-unknown-linux-musl" ;;
-        *) ui_warn "Unsupported architecture for ripgrep: $arch"; return 1 ;;
-    esac
-
-    local download_url="https://github.com/BurntSushi/ripgrep/releases/download/${latest_version}/ripgrep-${arch}.tar.gz"
-    local temp_dir="/tmp/ripgrep_install"
-    mkdir -p "$temp_dir"
-
-    if curl -L "$download_url" -o "$temp_dir/ripgrep.tar.gz" && \
-       tar -xzf "$temp_dir/ripgrep.tar.gz" -C "$temp_dir" && \
-       sudo mv "$temp_dir/rg" /usr/local/bin/ && \
-       sudo chmod +x /usr/local/bin/rg; then
-        ui_success "ripgrep installed successfully via GitHub release"
-        INSTALLED_PACKAGES+=("ripgrep")
-    else
-        ui_error "Failed to install ripgrep via GitHub release"
-        ERRORS+=("ripgrep fallback install")
-        rm -rf "$temp_dir"; return 1
-    fi
-    rm -rf "$temp_dir"
-}
-
-install_fd_fallback() {
-    ui_info "Installing fd via GitHub release (fallback method)..."
-    if command -v fd >/dev/null 2>&1; then
-        ui_success "fd is already installed"; return 0
-    fi
-    if [ "$DRY_RUN" = true ]; then
-        ui_info "[DRY-RUN] Would install fd via GitHub release"; return 0
-    fi
-
-    local latest_version
-    latest_version=$(curl -s "https://api.github.com/repos/sharkdp/fd/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")' || echo "v9.0.0")
-    [ -z "$latest_version" ] && latest_version="v9.0.0"
-
-    local arch
-    arch=$(uname -m)
-    case "$arch" in
-        x86_64) arch="x86_64-unknown-linux-gnu" ;;
-        aarch64) arch="aarch64-unknown-linux-gnu" ;;
-        *) ui_warn "Unsupported architecture for fd: $arch"; return 1 ;;
-    esac
-
-    local download_url="https://github.com/sharkdp/fd/releases/download/${latest_version}/fd-${latest_version#v}-${arch}.tar.gz"
-    local temp_dir="/tmp/fd_install"
-    mkdir -p "$temp_dir"
-
-    if curl -L "$download_url" -o "$temp_dir/fd.tar.gz" && \
-       tar -xzf "$temp_dir/fd.tar.gz" -C "$temp_dir" && \
-       sudo mv "$temp_dir/fd-${latest_version#v}-${arch}/fd" /usr/local/bin/ && \
-       sudo chmod +x /usr/local/bin/fd; then
-        ui_success "fd installed successfully via GitHub release"
-        INSTALLED_PACKAGES+=("fd")
-    else
-        ui_error "Failed to install fd via GitHub release"
-        ERRORS+=("fd fallback install")
-        rm -rf "$temp_dir"; return 1
-    fi
-    rm -rf "$temp_dir"
-}
-
 install_ucaresystem_core() {
     ui_info "Installing ucaresystem-core from GitHub..."
     if [ "$DRY_RUN" = true ]; then
@@ -273,7 +153,7 @@ install_ucaresystem_core() {
     local download_url="https://github.com/Utappia/uCareSystem/releases/download/${latest_release}/ucaresystem-core_${version_number}_all.deb"
     local temp_deb="/tmp/ucaresystem-core_${version_number}_all.deb"
 
-    if curl -L "$download_url" -o "$temp_deb" && \
+    if curl -sL "$download_url" -o "$temp_deb" 2>/dev/null && \
        [ -f "$temp_deb" ] && \
        sudo dpkg -i "$temp_deb" 2>/dev/null; then
         ui_success "ucaresystem-core installed successfully."
@@ -310,7 +190,7 @@ install_nerd_fonts() {
     fi
 
     mkdir -p "$font_dir"
-    if wget -q --show-progress "$font_url" -O "/tmp/${font_name}.zip"; then
+    if wget -q "$font_url" -O "/tmp/${font_name}.zip" 2>/dev/null; then
         if unzip -q "/tmp/${font_name}.zip" -d "$font_dir"; then
             find "$font_dir" -name "*Windows*" -delete
             fc-cache -fv >/dev/null 2>&1
@@ -500,10 +380,7 @@ install_apt_packages() {
 install_fallback_packages() {
     for pkg in "${fallback_packages[@]}"; do
         case "$pkg" in
-            eza) install_with_fallback "eza" "install_eza_fallback" ;;
             fastfetch) install_with_fallback "fastfetch" "install_fastfetch_fallback" ;;
-            ripgrep) install_with_fallback "ripgrep" "install_ripgrep_fallback" ;;
-            fd-find) install_with_fallback "fd-find" "install_fd_fallback" ;;
         esac
     done
 }

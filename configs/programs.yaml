@@ -20,6 +20,8 @@ apt:
       description: "DOS filesystem utilities"
     - name: duf
       description: "Disk usage utility"
+    - name: eza
+      description: "Modern ls replacement"
     - name: ffmpeg
       description: "Multimedia framework"
     - name: firefox
@@ -91,6 +93,8 @@ essential:
         description: "File transfer tool"
       - name: duf
         description: "Disk usage utility"
+      - name: eza
+        description: "Modern ls replacement"
       - name: fwupd
         description: "Firmware update daemon"
       - name: fzf
@@ -162,14 +166,8 @@ desktop_environments:
 # Packages not in repos — installed via GitHub fallback
 fallback:
   packages:
-    - name: eza
-      description: "Modern ls replacement"
     - name: fastfetch
       description: "System information tool"
-    - name: ripgrep
-      description: "Fast grep replacement"
-    - name: fd-find
-      description: "Fast find replacement"
 
 # Flatpak applications
 flatpak:
