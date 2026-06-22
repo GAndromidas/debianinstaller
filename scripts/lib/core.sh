@@ -114,15 +114,6 @@ log_info() {
   fi
 }
 
-log_success() {
-  local message="$1"
-  local detail="${2:-}"
-  log_to_file "SUCCESS: $message"
-  if [ -n "$detail" ]; then
-    log_to_file "  DETAIL: $detail"
-  fi
-}
-
 log_warning() {
   local message="$1"
   local detail="${2:-}"
@@ -140,14 +131,6 @@ log_error() {
     log_to_file "  DETAIL: $detail"
   fi
   ERRORS+=("$message")
-}
-
-log_debug() {
-  local message="$1"
-  if [ "${VERBOSE:-false}" = true ]; then
-    log_to_file "DEBUG: $message"
-    echo -e "${THEME_MUTED}[DEBUG] $message${RESET}"
-  fi
 }
 
 log_both() {

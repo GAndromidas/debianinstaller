@@ -133,7 +133,7 @@ prompt_reboot() {
     echo "" >&2
     gum style --foreground "$GUM_WARN" "Ready to reboot your system?" >&2 2>/dev/null || true
     echo "" >&2
-    if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "Reboot now?" >/dev/tty; then
+    if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "Reboot now?" >/dev/tty </dev/tty 2>/dev/null; then
       echo ""
       echo -e "${THEME_TEXT}Rebooting your system...${RESET}"
       echo -e "${THEME_HEADER}Thank you for using Debian Installer!${RESET}"
@@ -184,24 +184,3 @@ prompt_reboot() {
 }
 fi
 
-# ============================================================================
-# Summary & Finalization (legacy compat)
-# ============================================================================
-if ! declare -f final_cleanup >/dev/null 2>&1; then
-final_cleanup() {
-    if [ "$DRY_RUN" = true ]; then
-        ui_info "[DRY-RUN] Final cleanup would run here."
-        return
-    fi
-    ui_info "Performing final cleanup..."
-
-    if [ "${FIGLET_INSTALLED_BY_SCRIPT:-false}" = true ]; then
-        ui_info "Removing temporary package 'figlet'..."
-        sudo apt-get remove --purge -y figlet -qq >/dev/null 2>&1
-    fi
-
-    ui_info "Removing installer directory..."
-    rm -rf "$SCRIPT_DIR"
-    ui_success "Installer directory removed."
-}
-fi
