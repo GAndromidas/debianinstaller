@@ -154,14 +154,7 @@ configure_mangohud() {
 step "Gaming Mode Setup"
 simple_banner "Gaming Mode"
 
-local description="This includes popular tools like Discord, Steam, Wine, GameMode, MangoHud, Heroic Games Launcher, and more."
-
-if ! gum_confirm "Enable Gaming Mode?" "$description"; then
-    ui_info "Gaming Mode skipped."
-    return 0
-fi
-
-ui_success "Gaming Mode enabled! Installing gaming packages and optimizations..."
+ui_info "Installing gaming packages and optimizations (Discord, Steam, Wine, GameMode, MangoHud, Heroic Games Launcher)..."
 
 if ! load_package_lists; then
     return 1

@@ -51,17 +51,25 @@ show_gum_menu() {
   gum style --margin "0 0 1 0" --foreground "$GUM_WARN" "fully configured, optimized system with all the tools you need!"
 
   local choice=$(gum choose --cursor="-> " --selected.foreground "$GUM_PRIMARY" --cursor.foreground "$GUM_PRIMARY" \
-    "Desktop - Full desktop setup (recommended)" \
+    "Desktop (Gaming) - Full desktop setup with gaming mode (recommended)" \
+    "Desktop (No Gaming) - Full desktop setup without gaming mode" \
     "Server  - Minimal server setup (Docker, SSH, etc.)" \
     "Exit - Cancel installation")
 
   case "$choice" in
-    "Desktop"*)
+    "Desktop (Gaming)"*)
       INSTALL_MODE="desktop"
-      echo "Installation Mode: Desktop - Full desktop setup"
+      GAMING_ENABLED=true
+      echo "Installation Mode: Desktop with gaming mode"
+      ;;
+    "Desktop (No Gaming)"*)
+      INSTALL_MODE="desktop"
+      GAMING_ENABLED=false
+      echo "Installation Mode: Desktop without gaming mode"
       ;;
     "Server"*)
       INSTALL_MODE="server"
+      GAMING_ENABLED=false
       echo "Installation Mode: Server - Minimal server setup"
       ;;
     "Exit"*)
@@ -83,30 +91,39 @@ show_traditional_menu() {
   echo ""
   echo -e "${THEME_HEADER}Choose your installation mode:${RESET}"
   echo ""
-  printf "  1) Desktop%-14s - Full desktop setup (recommended)\n" ""
-  printf "  2) Server%-15s - Minimal server setup (Docker, SSH, etc.)\n" ""
-  printf "  3) Exit%-17s - Cancel installation\n" ""
+  printf "  1) Desktop (Gaming)%s- Full desktop setup with gaming mode (recommended)\n" ""
+  printf "  2) Desktop (No Gaming) - Full desktop setup without gaming mode\n"
+  printf "  3) Server%s- Minimal server setup (Docker, SSH, etc.)\n" ""
+  printf "  4) Exit%s- Cancel installation\n" ""
   echo ""
 
   while true; do
-    read -r -p "$(echo -e "${THEME_SECONDARY}Enter your choice [1-3]: ${RESET}")" menu_choice
+    read -r -p "$(echo -e "${THEME_SECONDARY}Enter your choice [1-4]: ${RESET}")" menu_choice
     case "$menu_choice" in
       1)
         INSTALL_MODE="desktop"
-        echo -e "${THEME_SUCCESS}✓ Selected: Desktop installation${RESET}"
+        GAMING_ENABLED=true
+        echo -e "${THEME_SUCCESS}✓ Selected: Desktop with gaming mode${RESET}"
         break
         ;;
       2)
-        INSTALL_MODE="server"
-        echo -e "${THEME_SUCCESS}✓ Selected: Server installation${RESET}"
+        INSTALL_MODE="desktop"
+        GAMING_ENABLED=false
+        echo -e "${THEME_SUCCESS}✓ Selected: Desktop without gaming mode${RESET}"
         break
         ;;
       3)
+        INSTALL_MODE="server"
+        GAMING_ENABLED=false
+        echo -e "${THEME_SUCCESS}✓ Selected: Server installation${RESET}"
+        break
+        ;;
+      4)
         echo -e "${THEME_WARN}Installation cancelled.${RESET}"
         exit 0
         ;;
       *)
-        echo -e "${THEME_ERROR}Invalid choice! Please enter a number from 1 to 3.${RESET}"
+        echo -e "${THEME_ERROR}Invalid choice! Please enter a number from 1 to 4.${RESET}"
         ;;
     esac
   done

@@ -294,6 +294,10 @@ fi
 
 export INSTALL_MODE
 
+# Default GAMING_ENABLED if not set by menu (e.g. headless system)
+GAMING_ENABLED="${GAMING_ENABLED:-false}"
+export GAMING_ENABLED
+
 # Function to validate state file integrity
 validate_state_file() {
   if [ ! -f "$STATE_FILE" ]; then
@@ -628,8 +632,8 @@ fi
 
 # Step 4: Gaming Mode
 dashboard_step "Gaming Mode" 4
-if [[ "$INSTALL_MODE" == "server" ]]; then
-  dashboard_skip "Skipped — server mode"
+if [[ "$INSTALL_MODE" == "server" || "$GAMING_ENABLED" == "false" ]]; then
+  dashboard_skip "Skipped"
 elif is_step_complete "gaming_mode"; then
   dashboard_skip
 else
