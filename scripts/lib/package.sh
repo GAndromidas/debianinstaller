@@ -106,7 +106,7 @@ apt_install_single() {
     local update_done=false
     while [ $retry_count -lt $max_retries ]; do
         local output
-        if output=$(DEBIAN_FRONTEND=noninteractive sudo apt-get install -y "$pkg" 2>&1); then
+        if output=$(sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y "$pkg" 2>&1); then
             [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] && printf "${GREEN} ✓ Success${RESET}\n"
             INSTALLED_PACKAGES+=("$pkg")
             return 0
@@ -163,7 +163,7 @@ apt_install() {
 
     suppress_python_warnings
 
-    if NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -qq "${to_install[@]}" >/dev/null 2>&1; then
+    if sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${to_install[@]}" >/dev/null 2>&1; then
         if [ "$VERBOSE_MODE" = false ] && [ "$QUIET_MODE" = false ]; then
             printf "${GREEN} ✓ Batch installation successful${RESET}\n"
         fi
