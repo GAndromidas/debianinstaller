@@ -2,13 +2,7 @@
 
 # This script enables and configures essential system services like the firewall and SSH.
 
-# Source common functions
-if [ -f "$(dirname "$0")/common.sh" ]; then
-    source "$(dirname "$0")/common.sh"
-else
-    echo "Error: common.sh not found." >&2
-    exit 1
-fi
+# Source common.sh is already sourced by the main install.sh
 
 # --- Function to Configure UFW (Uncomplicated Firewall) ---
 configure_ufw() {

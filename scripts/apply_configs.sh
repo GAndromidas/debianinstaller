@@ -3,13 +3,7 @@
 # This script's only job is to forcefully apply user configurations.
 # It is designed to be run every time, ensuring the user's preferred settings are always active.
 
-# Source common functions
-if [ -f "$(dirname "$0")/common.sh" ]; then
-    source "$(dirname "$0")/common.sh"
-else
-    echo "Error: common.sh not found." >&2
-    exit 1
-fi
+# Source common.sh is already sourced by the main install.sh
 
 apply_configs() {
     ui_info "Applying user configurations (overwriting existing files)..."

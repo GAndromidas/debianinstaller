@@ -2,13 +2,7 @@
 
 # This script handles the setup of ZSH, Oh My Zsh, Starship, and Fastfetch.
 
-# Source common functions
-if [ -f "$(dirname "$0")/common.sh" ]; then
-    source "$(dirname "$0")/common.sh"
-else
-    echo "Error: common.sh not found." >&2
-    exit 1
-fi
+# Source common.sh is already sourced by the main install.sh
 
 # --- ZSH and Oh My Zsh ---
 install_zsh_package() {

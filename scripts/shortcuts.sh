@@ -4,13 +4,7 @@
 # It sets Meta+Enter to launch a terminal and Meta+Q to close a window.
 # Commands are made resilient with '|| true' to prevent halting the main installer on non-critical errors.
 
-# Source common functions
-if [ -f "$(dirname "$0")/common.sh" ]; then
-    source "$(dirname "$0")/common.sh"
-else
-    echo "Error: common.sh not found." >&2
-    exit 1
-fi
+# Source common.sh is already sourced by the main install.sh
 
 # --- Desktop Environment Detection ---
 detect_de() {

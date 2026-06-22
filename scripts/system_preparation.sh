@@ -2,14 +2,7 @@
 
 # This script prepares the system by updating, upgrading, and installing essential dependencies.
 
-# Source common functions
-if [ -f "$(dirname "$0")/common.sh" ]; then
-    source "$(dirname "$0")/common.sh"
-else
-    # This is a critical error, as nothing else can run without common.sh
-    echo "FATAL: common.sh not found. The installer cannot continue." >&2
-    exit 1
-fi
+# Source common.sh is already sourced by the main install.sh
 
 # --- Function to Update and Upgrade the System ---
 update_and_upgrade() {

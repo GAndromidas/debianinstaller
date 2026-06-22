@@ -2,13 +2,7 @@
 
 # This script handles the installation and basic configuration of Fail2ban.
 
-# Source common functions
-if [ -f "$(dirname "$0")/common.sh" ]; then
-    source "$(dirname "$0")/common.sh"
-else
-    echo "Error: common.sh not found." >&2
-    exit 1
-fi
+# Source common.sh is already sourced by the main install.sh
 
 # --- Function to install Fail2ban ---
 install_fail2ban() {

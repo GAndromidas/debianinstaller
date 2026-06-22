@@ -3,13 +3,7 @@
 # This script sets up the system for gaming by installing essential tools
 # and applications like Steam, Faugus Launcher, and performance enhancement utilities.
 
-# Source common functions
-if [ -f "$(dirname "$0")/common.sh" ]; then
-    source "$(dirname "$0")/common.sh"
-else
-    echo "Error: common.sh not found." >&2
-    exit 1
-fi
+# Source common.sh is already sourced by the main install.sh
 
 # --- Function to install Discord ---
 install_discord() {
