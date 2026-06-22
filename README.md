@@ -23,7 +23,7 @@ Transform your fresh Debian, Ubuntu, Linux Mint, Zorin OS, or Pop!_OS installati
 - 🎯 **Distribution-Aware** - Detects Debian, Ubuntu, Mint, Zorin OS, Pop!_OS with version-specific support
 - 🛡️ **Security-First** - Comprehensive hardening with Fail2ban and firewall configuration
 - ⚡ **Performance-Optimized** - Intelligent package management and system tuning
-- 🔄 **Reliable** - Robust error handling and fallback mechanisms
+- 🔄 **Reliable** - Robust error handling, resume support, and fallback mechanisms
 
 ---
 
@@ -43,6 +43,12 @@ Transform your fresh Debian, Ubuntu, Linux Mint, Zorin OS, or Pop!_OS installati
   - Storage type detection and optimization
   - Desktop environment recognition and integration
 
+- **Professional Dashboard Wizard**
+  - Full-screen persistent installation dashboard with live progress bar
+  - Real-time step tracking with per-step timing
+  - Gum-enhanced interactive menus with arrow-key navigation
+  - Automatic fallback to traditional prompts when gum is unavailable
+
 - **Smart Package Management**
   - Package availability checking before installation
   - Automatic fallback to GitHub releases for missing packages
@@ -59,6 +65,9 @@ Transform your fresh Debian, Ubuntu, Linux Mint, Zorin OS, or Pop!_OS installati
 
 - **System Reliability**
   - Robust error handling and recovery
+  - Resume functionality for interrupted installations
+  - Atomic state tracking with failure logging
+  - Automatic sudo keepalive with cleanup on exit
   - Comprehensive logging and debugging
   - Clean environment management
   - Package dependency resolution
@@ -91,8 +100,11 @@ Transform your system into a gaming powerhouse with one click:
 
 ### 🚀 User Experience
 
-- **Professional Installation Interface**
-  - Clean, colored progress indicators
+- **Professional Dashboard Wizard**
+  - Full-screen persistent installation dashboard with live progress bar
+  - Real-time step tracking with timing for each phase
+  - Gum-enhanced UI with arrow-key menus and confirmations
+  - Automatic fallback to traditional prompts when gum is unavailable
   - Batch installation with intelligent fallback
   - Verbose/quiet/dry-run modes for flexibility
   - Real-time package tracking and error reporting
@@ -167,30 +179,49 @@ cd debianinstaller
 ./install.sh [OPTIONS]
 
 OPTIONS:
-  -h, --help      Show help message
-  -v, --verbose   Enable detailed output
-  -q, --quiet     Minimal output mode
-  -d, --dry-run   Preview changes only
+  -h, --help      Show this help message and exit
+  -v, --verbose   Enable verbose output (show all package installation details)
+  -q, --quiet     Quiet mode (minimal output)
+  -d, --dry-run   Preview what will be installed without making changes
 ```
 
 ### Installation Experience
 
-The installer provides a professional, user-friendly experience:
+The installer provides a professional dashboard wizard with real-time progress tracking:
 
 ```
-=====================================================
-          WELCOME TO DEBIAN INSTALLER                
-=====================================================
-This script will set up your Debian-based system with all the essentials!
-
-Choose your installation mode:
-  1) Desktop - Full desktop setup
-  2) Server  - Minimal server setup
-  3) Exit    - Cancel installation
-
-Enter your choice [1-3]: 1
-✓ Selected: Desktop installation
+  ┌──────────────────────────────────────────────────────┐
+  │ ● Debian Installer                        Step 1/9  │
+  ├──────────────────────────────────────────────────────┤
+  │  ███████████░░░░░░░░░░░░░░░░░  System Pre...  11%  │
+  ├──────────────────────────────────────────────────────┤
+  │   1  ✓ System Preparation                   12s     │
+  │   2  ● Running...                                    │
+  │   3  ○ Pending                                       │
+  │   4  ○ Pending                                       │
+  │   5  ○ Pending                                       │
+  │   6  ○ Pending                                       │
+  │   7  ○ Pending                                       │
+  │   8  ○ Pending                                       │
+  │   9  ○ Pending                                       │
+  ├──────────────────────────────────────────────────────┤
+  │ Log: ~/.debianinstaller.log            Ctrl+C cancel │
+  └──────────────────────────────────────────────────────┘
 ```
+
+When **gum** is installed, the menu uses arrow-key navigation:
+```
+  Your OS is: Ubuntu 24.04
+  
+  This script will transform your fresh Debian-based installation
+  into a fully configured, optimized system!
+  
+  > Desktop - Full desktop setup (recommended)
+    Server  - Minimal server setup
+    Exit - Cancel installation
+```
+
+Without gum, a traditional numbered menu is shown instead.
 
 ---
 
@@ -205,18 +236,26 @@ Enter your choice [1-3]: 1
 
 ### Enhanced Package Tracking
 
+After completion, the dashboard displays a full summary:
+
 ```
-==================== Installation Summary ====================
-Total execution time: 1m 35s
+  ╔══════════════════════════════════════════════════════╗
+  ║              Installation Complete                   ║
+  ╚══════════════════════════════════════════════════════╝
 
-✓ Successfully Installed Packages (24):
-  curl
-  git
-  fastfetch
-  ucaresystem-core
+  ✓  Step  1: System Preparation                 12s
+  ✓  Step  2: Shell Setup                         45s
+  ✓  Step  3: Programs Installation               2m 30s
+  ◇  Step  4: Gaming Mode                      Skipped
+  ✓  Step  5: Desktop Shortcuts                   8s
+  ✓  Step  6: Fail2ban Setup                      15s
+  ✓  Step  7: System Services                     22s
+  ✓  Step  8: Maintenance                         10s
+  ✓  Step  9: Apply Custom Configurations         5s
 
-✗ Failed Package Installations (0):
-============================================================
+  ──────────────────────────────────────────────────────
+
+    8 completed, 0 failed, 1 skipped  |  Total: 4m 27s
 ```
 
 ### Package Sources
@@ -282,7 +321,7 @@ Total execution time: 1m 35s
 debianinstaller/
 ├── install.sh              # Main installation script
 ├── scripts/                # Core functionality modules
-│   ├── common.sh          # Shared functions and utilities
+│   ├── common.sh          # UI toolkit, dashboard wizard, shared utilities
 │   ├── programs.sh        # Package installation logic
 │   ├── shell_setup.sh     # ZSH and terminal configuration
 │   ├── gaming_mode.sh     # Gaming mode setup
@@ -321,7 +360,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **Arch Linux Community**: For inspiration and best practices
 - **Debian Project**: For the stable foundation
 - **Ubuntu Community**: For distribution-specific insights
 - **Linux Mint Team**: For desktop environment expertise
