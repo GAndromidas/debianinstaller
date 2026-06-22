@@ -9,11 +9,12 @@ apply_configs() {
     ui_info "Applying user configurations (overwriting existing files)..."
 
     # Define source and destination paths
-    local zshrc_source="$(dirname "$0")/../configs/.zshrc"
+    local configs_dir="$SCRIPT_DIR/configs"
+    local zshrc_source="$configs_dir/.zshrc"
     local zshrc_dest="$HOME/.zshrc"
-    local starship_source="$(dirname "$0")/../configs/starship.toml"
+    local starship_source="$configs_dir/starship.toml"
     local starship_dest="$HOME/.config/starship.toml"
-    local fastfetch_source="$(dirname "$0")/../configs/config.jsonc"
+    local fastfetch_source="$configs_dir/config.jsonc"
     local fastfetch_dest="$HOME/.config/fastfetch/config.jsonc"
 
     if [ "$DRY_RUN" = true ]; then

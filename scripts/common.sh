@@ -83,7 +83,6 @@ ERRORS=()
 INSTALLED_PACKAGES=()
 FAILED_PACKAGES=()
 REMOVED_PACKAGES=()
-START_TIME=$(date +%s)
 TOTAL_STEPS=9
 
 # --- Installation Mode Variables ---
@@ -360,7 +359,7 @@ gum_confirm() {
 
     if supports_gum; then
         if [ -n "$description" ]; then
-            gum style --foreground "$GUM_WARN" "$description" >/dev/tty 2>/dev/null || true
+            gum style --foreground "$GUM_WARN" "$description" >&2 2>/dev/null || true
         fi
         if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "$question"; then
             return 0
@@ -926,9 +925,9 @@ prompt_reboot() {
   echo ""
 
   if command -v gum >/dev/null 2>&1; then
-    echo "" >/dev/tty 2>/dev/null || echo ""
-    gum style --foreground "$GUM_WARN" "Ready to reboot your system?" >/dev/tty 2>/dev/null || true
-    echo "" >/dev/tty 2>/dev/null || echo ""
+    echo "" >&2
+    gum style --foreground "$GUM_WARN" "Ready to reboot your system?" >&2 2>/dev/null || true
+    echo "" >&2
     if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "Reboot now?"; then
       echo ""
       echo -e "${THEME_TEXT}Rebooting your system...${RESET}"
@@ -1188,6 +1187,7 @@ apt_install_single() {
         return 0
     fi
 
+    local update_done=false
     while [ $retry_count -lt $max_retries ]; do
         local output
         if output=$(sudo apt-get install -y "$pkg" 2>&1); then
@@ -1199,7 +1199,10 @@ apt_install_single() {
             if [ $retry_count -lt $max_retries ]; then
                 [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] && printf "${YELLOW} ! Retrying ($retry_count/$max_retries)...${RESET}\n"
                 sleep 3
-                sudo apt-get update -qq >/dev/null 2>&1 || true
+                if [ "$update_done" = false ]; then
+                    sudo apt-get update -qq >/dev/null 2>&1 || true
+                    update_done=true
+                fi
             else
                 [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] && printf "${RED} ✗ Failed after $max_retries attempts${RESET}\n"
                 if [ "$verbose" = true ] || [ "$VERBOSE_MODE" = true ] || [[ "$output" == *"E:"* ]] || [[ "$output" == *"Error:"* ]]; then

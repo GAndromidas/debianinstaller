@@ -127,64 +127,33 @@ install_starship() {
     fi
 }
 
-# --- Fastfetch ---
-install_fastfetch_from_github() {
-    ui_info "Attempting to download latest Fastfetch release from GitHub..."
-    local arch
-    case "$(uname -m)" in
-        "x86_64") arch="amd64" ;;
-        "aarch64") arch="aarch64" ;;
-        *)
-            ui_error "Unsupported architecture: $(uname -m). Cannot install Fastfetch from GitHub."
-            return 1
-            ;;
-    esac
-    local deb_url
-    deb_url=$(curl -s "https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest" | grep "browser_download_url" | grep -E "fastfetch-linux-${arch}\.deb" | cut -d '"' -f 4 | head -n 1)
-    if [ -z "$deb_url" ]; then
-        ui_error "Could not find a suitable Fastfetch .deb release on GitHub."
-        return 1
-    fi
-    local temp_deb="/tmp/fastfetch.deb"
-    if ! wget -q -O "$temp_deb" "$deb_url"; then
-        ui_error "Failed to download Fastfetch .deb package."
-        return 1
-    fi
-    sudo dpkg -i "$temp_deb" &>/dev/null || true
-    if ! sudo apt-get install -f -y -qq; then
-        ui_error "Failed to fix dependencies for Fastfetch."
-        rm -f "$temp_deb"
-        return 1
-    fi
-    rm -f "$temp_deb"
-    ui_success "Fastfetch installed successfully from GitHub."
-    return 0
-}
-
+# --- Fastfetch (install early for config to reference) ---
 install_fastfetch() {
-    ui_info "Checking for Fastfetch..."
     if command -v fastfetch >/dev/null 2>&1; then
-        ui_success "Fastfetch is already installed."
         return 0
     fi
     if [ "$DRY_RUN" = true ]; then
-        ui_info "[DRY-RUN] Would attempt to install Fastfetch."
         return 0
     fi
-    ui_info "Trying to install Fastfetch from APT repository..."
     if apt_install fastfetch; then
-        if command -v fastfetch >/dev/null 2>&1; then
-            ui_success "Fastfetch installed successfully from repository."
-            return 0
-        fi
+        command -v fastfetch >/dev/null 2>&1 && return 0
     fi
-    ui_warn "Fastfetch not found in APT or installation failed."
-    if ! install_fastfetch_from_github; then
-        ui_error "Failed to install Fastfetch from all sources."
-        ERRORS+=("Fastfetch installation")
+    # GitHub fallback
+    local arch
+    case "$(uname -m)" in
+        x86_64) arch="amd64" ;;
+        aarch64) arch="aarch64" ;;
+        *) ui_warn "Unsupported arch for fastfetch GitHub install"; return 1 ;;
+    esac
+    local ver
+    ver=$(curl -s "https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")' || echo "2.12.2")
+    local url="https://github.com/fastfetch-cli/fastfetch/releases/download/${ver}/fastfetch-linux-${arch}.deb"
+    local tmp="/tmp/fastfetch.deb"
+    if wget -q -O "$tmp" "$url"; then
+        sudo dpkg -i "$tmp" &>/dev/null || sudo apt-get install -f -y -qq
+        rm -f "$tmp"
     fi
 }
-
 # --- Set Default Shell ---
 change_default_shell() {
     local zsh_path

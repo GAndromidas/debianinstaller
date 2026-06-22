@@ -106,21 +106,30 @@ setup_distribution_repos() {
             # but we'll verify and add them if needed
         fi
         
-        # Check if we need to add repositories
-        if ! grep -q "universe" /etc/apt/sources.list 2>/dev/null && ! grep -q "universe" /etc/apt/sources.list.d/* 2>/dev/null; then
+        # Check if we need to add repositories (safe glob handling)
+        local has_universe=false
+        grep -q "universe" /etc/apt/sources.list 2>/dev/null && has_universe=true
+        for f in /etc/apt/sources.list.d/*.list; do
+            [ -f "$f" ] && grep -q "universe" "$f" 2>/dev/null && has_universe=true && break
+        done
+        if [ "$has_universe" = false ]; then
             sudo add-apt-repository universe -y 2>/dev/null || ui_warn "Could not add universe repository"
         else
             ui_info "Universe repository is already enabled"
         fi
         
-        if ! grep -q "multiverse" /etc/apt/sources.list 2>/dev/null && ! grep -q "multiverse" /etc/apt/sources.list.d/* 2>/dev/null; then
+        local has_multiverse=false
+        grep -q "multiverse" /etc/apt/sources.list 2>/dev/null && has_multiverse=true
+        for f in /etc/apt/sources.list.d/*.list; do
+            [ -f "$f" ] && grep -q "multiverse" "$f" 2>/dev/null && has_multiverse=true && break
+        done
+        if [ "$has_multiverse" = false ]; then
             sudo add-apt-repository multiverse -y 2>/dev/null || ui_warn "Could not add multiverse repository"
         else
             ui_info "Multiverse repository is already enabled"
         fi
         
-        # Update package list after adding repositories
-        sudo apt-get update -qq || ui_warn "Repository update failed"
+        ui_info "Repositories updated (already done during system update)"
     fi
     
     # Debian-specific repository setup

@@ -56,16 +56,11 @@ install_discord() {
 # --- Function to configure MangoHud ---
 configure_mangohud() {
     ui_info "Configuring MangoHud..."
-    local config_source="$(dirname "$0")/../configs/MangoHud.conf"
+    local config_source="$SCRIPT_DIR/configs/MangoHud.conf"
     local config_dest_dir="$HOME/.config/MangoHud"
 
     if [ ! -f "$config_source" ]; then
         ui_warn "MangoHud.conf not found in configs directory. Skipping."
-        return
-    fi
-
-    if [ -f "$config_dest_dir/MangoHud.conf" ]; then
-        ui_warn "Existing 'MangoHud.conf' found. Skipping to preserve your settings."
         return
     fi
 
@@ -151,10 +146,8 @@ fi
 ui_info "This will include Steam, Faugus Launcher, GameMode, MangoHud, and more."
 
 # Define the list of essential gaming packages
-# Including both 'steam' and 'steam-installer' makes it robust across different distro repos.
+# Try 'steam' first, fall back to 'steam-installer' for cross-distro compatibility
 gaming_packages=(
-    "steam"
-    "steam-installer"
     "gamemode"
     "mangohud"
     "wine"
@@ -163,6 +156,17 @@ gaming_packages=(
 
 # Install the packages using the common function
 apt_install "${gaming_packages[@]}"
+
+# Install steam with cross-distro fallback
+if ! dpkg -l steam 2>/dev/null | grep -q "^ii"; then
+    if is_package_available "steam"; then
+        apt_install steam
+    elif is_package_available "steam-installer"; then
+        apt_install steam-installer
+    else
+        ui_warn "Steam not available in repositories. You can install it manually from https://store.steampowered.com"
+    fi
+fi
 
 # Install Discord separately as it's often not in repos
 install_discord

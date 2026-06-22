@@ -224,15 +224,30 @@ install_fastfetch_fallback() {
     mkdir -p "$temp_dir"
     
     # Download and extract
-    if curl -L "$download_url" -o "$temp_dir/fastfetch.tar.gz" && \
-       tar -xzf "$temp_dir/fastfetch.tar.gz" -C "$temp_dir" && \
-       sudo mv "$temp_dir/usr/bin/fastfetch" /usr/local/bin/ && \
+    if ! curl -L "$download_url" -o "$temp_dir/fastfetch.tar.gz"; then
+        ui_error "Failed to download fastfetch"
+        rm -rf "$temp_dir"
+        return 1
+    fi
+    
+    # Find the binary inside the tarball (structure varies by version)
+    local fastfetch_bin
+    fastfetch_bin=$(tar -tzf "$temp_dir/fastfetch.tar.gz" | grep -m1 '/fastfetch$' || true)
+    if [ -z "$fastfetch_bin" ]; then
+        ui_error "Could not find fastfetch binary in archive"
+        rm -rf "$temp_dir"
+        return 1
+    fi
+    
+    if tar -xzf "$temp_dir/fastfetch.tar.gz" -C "$temp_dir" && \
+       sudo mv "$temp_dir/$fastfetch_bin" /usr/local/bin/fastfetch && \
        sudo chmod +x /usr/local/bin/fastfetch; then
         ui_success "fastfetch installed successfully via GitHub release"
         INSTALLED_PACKAGES+=("fastfetch")
     else
         ui_error "Failed to install fastfetch via GitHub release"
         ERRORS+=("fastfetch fallback install")
+        rm -rf "$temp_dir"
         return 1
     fi
     
@@ -556,11 +571,15 @@ install_docker() {
             fi
         fi
         
-        # Add Docker repository with distribution-specific handling
-        echo \
-            "deb [arch=$(dpkg --print-architecture) signed-by=$docker_key_path] $docker_repo \
-            $ubuntu_codename stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-        sudo apt-get update
+        # Add Docker repository with distribution-specific handling (idempotent)
+        if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
+            echo \
+                "deb [arch=$(dpkg --print-architecture) signed-by=$docker_key_path] $docker_repo \
+                $ubuntu_codename stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update -qq
+        else
+            ui_info "Docker repository already configured"
+        fi
         apt_install docker-ce docker-ce-cli containerd.io
         sudo usermod -aG docker "$USER"
         ui_success "Docker installed successfully. Please log out and log back in to use Docker without sudo."

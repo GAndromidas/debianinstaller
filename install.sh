@@ -68,6 +68,25 @@ CONFIGS_DIR="$SCRIPT_DIR/configs"
 STATE_FILE="$HOME/.debianinstaller.state"
 mkdir -p "$(dirname "$STATE_FILE")"
 
+# Cache state file in memory to avoid repeated grep calls
+# Keys: step_name => status ("completed" | "failed" | "")
+declare -A COMPLETED_STEPS
+load_state_cache() {
+  COMPLETED_STEPS=()
+  if [ -f "$STATE_FILE" ]; then
+    while IFS= read -r line; do
+      if [[ "$line" =~ ^(COMPLETED|FAILED):\ (.+) ]]; then
+        local status="${BASH_REMATCH[1],,}"
+        local step="${BASH_REMATCH[2]}"
+        COMPLETED_STEPS["$step"]="$status"
+      else
+        COMPLETED_STEPS["$line"]="completed"
+      fi
+    done < "$STATE_FILE"
+  fi
+}
+load_state_cache
+
 # Initialize log file
 {
   echo "=========================================="
@@ -275,6 +294,7 @@ validate_state_file() {
   if [ ! -r "$STATE_FILE" ] || [ ! -s "$STATE_FILE" ]; then
     log_warning "State file is corrupted or empty. Starting fresh installation."
     rm -f "$STATE_FILE" 2>/dev/null || true
+    load_state_cache
     return 1
   fi
 
@@ -345,6 +365,7 @@ show_resume_menu() {
         else
           if gum confirm --default=false "Start fresh installation (this will clear previous progress)?"; then
             rm -f "$STATE_FILE" 2>/dev/null || true
+            load_state_cache
             ui_info "Starting fresh installation..."
             return 0
           else
@@ -397,7 +418,7 @@ show_resume_menu() {
         case "$choice" in
           1) ui_info "Will retry failed steps during installation"; return 0 ;;
           2) ui_success "Resuming installation from last completed step..."; return 0 ;;
-          3) rm -f "$STATE_FILE" 2>/dev/null || true; ui_info "Starting fresh installation..."; return 0 ;;
+          3) rm -f "$STATE_FILE" 2>/dev/null || true; load_state_cache; ui_info "Starting fresh installation..."; return 0 ;;
           4) ui_info "Installation cancelled by user"; exit 0 ;;
           *) ui_warn "Invalid option. Resuming installation..."; return 0 ;;
         esac
@@ -412,6 +433,7 @@ show_resume_menu() {
           read -r fresh_response
           if [[ "$fresh_response" =~ ^[Yy]$ ]]; then
             rm -f "$STATE_FILE" 2>/dev/null || true
+            load_state_cache
             ui_info "Starting fresh installation..."
             return 0
           else
@@ -457,27 +479,12 @@ else
 fi
 
 # Function to mark step as completed
-mark_step_complete() {
-  local step_name="$1"
-  if [ -z "$step_name" ]; then
-    log_error "mark_step_complete: step_name cannot be empty"
-    return 1
-  fi
-  (
-    flock -x 200
-    echo "$step_name" >> "$STATE_FILE"
-  ) 200>>"$STATE_FILE" 2>/dev/null || {
-    log_error "Failed to update state file for step: $step_name"
-    return 1
-  }
-}
-
-# Function to check if step was completed
 is_step_complete() {
-  [ -f "$STATE_FILE" ] && grep -q "^$1$" "$STATE_FILE"
+  local val="${COMPLETED_STEPS["$1"]:-}"
+  [ "$val" = "completed" ]
 }
 
-# Enhanced step completion with status tracking
+# Step completion with flock-protected write and cache update
 mark_step_complete_with_progress() {
   local step_name="$1"
   local status="${2:-completed}"
@@ -487,11 +494,20 @@ mark_step_complete_with_progress() {
     return 1
   fi
 
+  local entry
   if [ "$status" = "completed" ]; then
-    echo "COMPLETED: $step_name" >> "$STATE_FILE"
+    entry="COMPLETED: $step_name"
   else
-    echo "FAILED: $step_name" >> "$STATE_FILE"
+    entry="FAILED: $step_name"
   fi
+
+  (
+    flock -x 200
+    echo "$entry" >> "$STATE_FILE"
+  ) 200>>"$STATE_FILE" 2>/dev/null || {
+    echo "$entry" >> "$STATE_FILE"
+  }
+  COMPLETED_STEPS["$step_name"]="$status"
 }
 
 # Enhanced error handling and rollback functions
