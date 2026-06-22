@@ -360,7 +360,7 @@ gum_confirm() {
 
     if supports_gum; then
         if [ -n "$description" ]; then
-            gum style --foreground "$GUM_WARN" "$description"
+            gum style --foreground "$GUM_WARN" "$description" >/dev/tty 2>/dev/null || true
         fi
         if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "$question"; then
             return 0
@@ -545,7 +545,7 @@ dashboard_step() {
 dashboard_run() {
     local script_path=$1
 
-    source "$script_path"
+    source "$script_path" >> "$INSTALL_LOG"
     local ret=$?
     return $ret
 }
@@ -926,9 +926,9 @@ prompt_reboot() {
   echo ""
 
   if command -v gum >/dev/null 2>&1; then
-    echo ""
-    gum style --foreground "$GUM_WARN" "Ready to reboot your system?"
-    echo ""
+    echo "" >/dev/tty 2>/dev/null || echo ""
+    gum style --foreground "$GUM_WARN" "Ready to reboot your system?" >/dev/tty 2>/dev/null || true
+    echo "" >/dev/tty 2>/dev/null || echo ""
     if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "Reboot now?"; then
       echo ""
       echo -e "${THEME_TEXT}Rebooting your system...${RESET}"
