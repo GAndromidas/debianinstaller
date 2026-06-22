@@ -12,9 +12,9 @@ ui_confirm() {
 
     if supports_gum; then
         if [ -n "$description" ]; then
-            gum style --foreground "$GUM_WARN" "$description"
+            gum style --foreground "$GUM_WARN" "$description" >&2 2>/dev/null || true
         fi
-        if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "$question"; then
+        if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "$question" >/dev/tty </dev/tty 2>/dev/null; then
             return 0
         else
             return 1
@@ -125,9 +125,9 @@ gum_confirm() {
 
     if supports_gum; then
         if [ -n "$description" ]; then
-            gum style --foreground "$GUM_WARN" "$description"
+            gum style --foreground "$GUM_WARN" "$description" >&2 2>/dev/null || true
         fi
-        if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "$question"; then
+        if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "$question" >/dev/tty </dev/tty 2>/dev/null; then
             return 0
         else
             return 1
