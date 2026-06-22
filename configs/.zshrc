@@ -12,7 +12,7 @@ DEFAULT_USER=$USER
 zstyle ':omz:update' mode auto      # update automatically without asking
 
 # Plugins
-plugins=(git fzf)
+plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -34,6 +34,14 @@ elif [ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting
 elif [ -f "$HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]; then
     # Fallback to GitHub installation in Oh My Zsh custom plugins
     source "$HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+fi
+
+# fzf key bindings and completion (system package)
+if [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]; then
+    source /usr/share/doc/fzf/examples/key-bindings.zsh
+fi
+if [ -f /usr/share/doc/fzf/examples/completion.zsh ]; then
+    source /usr/share/doc/fzf/examples/completion.zsh
 fi
 
 # FZF Configuration - Compact list with colors
