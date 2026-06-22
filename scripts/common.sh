@@ -146,57 +146,44 @@ prompt_reboot() {
   echo -e "${THEME_WARN}It is strongly recommended to reboot now to apply all changes.${RESET}"
   echo ""
 
-  if command -v gum >/dev/null 2>&1; then
-    echo "" >&2
-    gum style --foreground "$GUM_WARN" "Ready to reboot your system?" >&2 2>/dev/null || true
-    echo "" >&2
-    if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "Reboot now?" >/dev/tty </dev/tty 2>/dev/null; then
-      echo ""
-      echo -e "${THEME_TEXT}Rebooting your system...${RESET}"
-      echo -e "${THEME_HEADER}Thank you for using Debian Installer!${RESET}"
-      echo ""
-      sleep 2
-      sudo reboot
-    else
-      echo ""
-      echo -e "${THEME_TEXT}Reboot skipped. You can reboot manually at any time using:${RESET}"
-      echo -e "${THEME_SECONDARY}   sudo reboot${RESET}"
-      echo -e "${THEME_TEXT}   Or simply restart your computer.${RESET}"
-    fi
-  else
-    while true; do
-      read -r -p "$(echo -e "${THEME_WARN}Reboot now? [Y/n]: ${RESET}")" reboot_ans
-      reboot_ans=${reboot_ans,,}
-      case "$reboot_ans" in
-        ""|y|yes)
-          echo ""
-          echo -e "${THEME_TEXT}Rebooting your system...${RESET}"
-          echo -e "${THEME_WARN}Thank you for using Debian Installer!${RESET}"
-          echo ""
-          sleep 2
-          sudo reboot
-          break
-          ;;
-        n|no)
-          echo ""
-          echo -e "${THEME_TEXT}Reboot skipped. You can reboot manually at any time using:${RESET}"
-          echo -e "${THEME_SECONDARY}   sudo reboot${RESET}"
-          echo -e "${THEME_TEXT}   Or simply restart your computer.${RESET}"
-          break
-          ;;
-      esac
-    done
-  fi
+  while true; do
+    read -r -p "$(echo -e "${THEME_WARN}Reboot now? [Y/n]: ${RESET}")" reboot_ans
+    reboot_ans=${reboot_ans,,}
+    case "$reboot_ans" in
+      ""|y|yes)
+        echo ""
+        echo -e "${THEME_TEXT}Rebooting your system...${RESET}"
+        echo -e "${THEME_HEADER}Thank you for using Debian Installer!${RESET}"
+        echo ""
+        sleep 2
+        sudo reboot
+        break
+        ;;
+      n|no)
+        echo ""
+        echo -e "${THEME_TEXT}Reboot skipped. You can reboot manually at any time using:${RESET}"
+        echo -e "${THEME_SECONDARY}   sudo reboot${RESET}"
+        echo -e "${THEME_TEXT}   Or simply restart your computer.${RESET}"
+        break
+        ;;
+    esac
+  done
 
   echo ""
   if [ ${#ERRORS[@]} -eq 0 ]; then
-    if gum_confirm "Do you want to clean up temporary logs?" "This will remove the installation log and state file."; then
-      echo -e "${THEME_TEXT}Cleaning up temporary files...${RESET}"
-      rm -f "$STATE_FILE" "$INSTALL_LOG" 2>/dev/null || true
-      echo -e "${THEME_SUCCESS}✓ Temporary files cleaned up${RESET}"
-    else
-      echo -e "${THEME_TEXT}Skipping cleanup.${RESET}"
-    fi
+    local cleanup_ans
+    read -r -p "$(echo -e "${THEME_WARN}Clean up temporary logs? [Y/n]: ${RESET}")" cleanup_ans
+    cleanup_ans=${cleanup_ans,,}
+    case "$cleanup_ans" in
+      ""|y|yes)
+        echo -e "${THEME_TEXT}Cleaning up temporary files...${RESET}"
+        rm -f "$STATE_FILE" "$INSTALL_LOG" 2>/dev/null || true
+        echo -e "${THEME_SUCCESS}✓ Temporary files cleaned up${RESET}"
+        ;;
+      *)
+        echo -e "${THEME_TEXT}Skipping cleanup.${RESET}"
+        ;;
+    esac
   fi
 }
 fi

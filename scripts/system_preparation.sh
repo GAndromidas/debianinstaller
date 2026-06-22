@@ -189,8 +189,11 @@ install_yq() {
     esac
 
     local yq_url="https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${arch}"
-    if wget -q -O /usr/local/bin/yq "$yq_url" 2>/dev/null || \
-       curl -sL -o /usr/local/bin/yq "$yq_url" 2>/dev/null; then
+    local tmp_yq="/tmp/yq_linux_${arch}"
+
+    if wget -q -O "$tmp_yq" "$yq_url" 2>/dev/null || \
+       curl -sL -o "$tmp_yq" "$yq_url" 2>/dev/null; then
+        sudo mv "$tmp_yq" /usr/local/bin/yq
         sudo chmod +x /usr/local/bin/yq
         if command -v yq &>/dev/null; then
             ui_success "yq installed successfully."
