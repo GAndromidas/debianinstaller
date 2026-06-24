@@ -131,15 +131,10 @@ show_traditional_menu() {
 fi
 
 # ============================================================================
-# Reboot Prompt (legacy compat)
+# Reboot Prompt
 # ============================================================================
-if ! declare -f prompt_reboot >/dev/null 2>&1; then
 prompt_reboot() {
-  echo ""
-  echo -e "${THEME_BORDER}============================================${RESET}"
-  echo -e "${THEME_HEADER}            Reboot System${RESET}"
-  echo -e "${THEME_BORDER}============================================${RESET}"
-  echo ""
+  simple_banner "Reboot System"
   echo -e "${THEME_TEXT}Congratulations! Your Debian-based system is now fully configured!${RESET}"
   echo ""
   echo -e "${THEME_TEXT}What happens after reboot:${RESET}"
@@ -150,45 +145,57 @@ prompt_reboot() {
   echo -e "${THEME_WARN}It is strongly recommended to reboot now to apply all changes.${RESET}"
   echo ""
 
-  while true; do
-    read -r -p "$(echo -e "${THEME_WARN}Reboot now? [Y/n]: ${RESET}")" reboot_ans
-    reboot_ans=${reboot_ans,,}
-    case "$reboot_ans" in
-      ""|y|yes)
-        echo ""
-        echo -e "${THEME_TEXT}Rebooting your system...${RESET}"
-        echo -e "${THEME_HEADER}Thank you for using Debian Installer!${RESET}"
-        echo ""
-        sleep 2
-        sudo reboot
-        break
-        ;;
-      n|no)
-        echo ""
-        echo -e "${THEME_TEXT}Reboot skipped. You can reboot manually at any time using:${RESET}"
-        echo -e "${THEME_SECONDARY}   sudo reboot${RESET}"
-        echo -e "${THEME_TEXT}   Or simply restart your computer.${RESET}"
-        break
-        ;;
-    esac
-  done
+  if command -v gum >/dev/null 2>&1; then
+    echo ""
+    gum style --foreground "$GUM_WARN" "Ready to reboot your system?"
+    echo ""
+    if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "Reboot now?"; then
+      echo ""
+      echo -e "${THEME_TEXT}Rebooting your system...${RESET}"
+      echo -e "${THEME_HEADER}Thank you for using Debian Installer!${RESET}"
+      echo ""
+      sleep 2
+      sudo reboot
+    else
+      echo ""
+      echo -e "${THEME_TEXT}Reboot skipped. You can reboot manually at any time using:${RESET}"
+      echo -e "${THEME_SECONDARY}   sudo reboot${RESET}"
+      echo -e "${THEME_TEXT}   Or simply restart your computer.${RESET}"
+    fi
+  else
+    while true; do
+      read -r -p "$(echo -e "${THEME_WARN}Reboot now? [Y/n]: ${RESET}")" reboot_ans
+      reboot_ans=${reboot_ans,,}
+      case "$reboot_ans" in
+        ""|y|yes)
+          echo ""
+          echo -e "${THEME_TEXT}Rebooting your system...${RESET}"
+          echo -e "${THEME_HEADER}Thank you for using Debian Installer!${RESET}"
+          echo ""
+          sleep 2
+          sudo reboot
+          break
+          ;;
+        n|no)
+          echo ""
+          echo -e "${THEME_TEXT}Reboot skipped. You can reboot manually at any time using:${RESET}"
+          echo -e "${THEME_SECONDARY}   sudo reboot${RESET}"
+          echo -e "${THEME_TEXT}   Or simply restart your computer.${RESET}"
+          break
+          ;;
+      esac
+    done
+  fi
 
   echo ""
   if [ ${#ERRORS[@]} -eq 0 ]; then
-    local cleanup_ans
-    read -r -p "$(echo -e "${THEME_WARN}Clean up temporary logs? [Y/n]: ${RESET}")" cleanup_ans
-    cleanup_ans=${cleanup_ans,,}
-    case "$cleanup_ans" in
-      ""|y|yes)
-        echo -e "${THEME_TEXT}Cleaning up temporary files...${RESET}"
-        rm -f "$STATE_FILE" "$INSTALL_LOG" 2>/dev/null || true
-        echo -e "${THEME_SUCCESS}✓ Temporary files cleaned up${RESET}"
-        ;;
-      *)
-        echo -e "${THEME_TEXT}Skipping cleanup.${RESET}"
-        ;;
-    esac
+    if gum_confirm "Do you want to clean up temporary logs?" "This will remove the installation log and state file."; then
+      echo -e "${THEME_TEXT}Cleaning up temporary files...${RESET}"
+      rm -f "$STATE_FILE" "$INSTALL_LOG" 2>/dev/null || true
+      echo -e "${THEME_SUCCESS}✓ Temporary files cleaned up${RESET}"
+    else
+      echo -e "${THEME_TEXT}Skipping cleanup.${RESET}"
+    fi
   fi
 }
-fi
 
