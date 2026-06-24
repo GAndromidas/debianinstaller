@@ -11,12 +11,6 @@ apt:
       description: "Digital distribution platform for games"
     - name: steam-installer
       description: "Steam installer (fallback package name)"
-    - name: wine
-      description: "Compatibility layer for running Windows applications"
-    - name: wine32
-      description: "32-bit Wine support"
-    - name: wine64
-      description: "64-bit Wine support"
     - name: vulkan-tools
       description: "Vulkan information and tools"
 
@@ -29,3 +23,5 @@ flatpak:
       description: "Faugus Launcher for game management"
     - name: com.vysp3r.ProtonPlus
       description: "ProtonPlus for installing Proton-GE"
+    - name: com.discordapp.Discord
+      description: "Discord chat and voice communication platform"
