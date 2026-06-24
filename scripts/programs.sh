@@ -251,51 +251,40 @@ install_docker() {
     local docker_key_url="${docker_repo}/gpg"
     local docker_key_path="/usr/share/keyrings/docker-archive-keyring.gpg"
 
-    if add_repository_key "$docker_key_url" "Docker" "$docker_key_path"; then
-        local ubuntu_codename
-        ubuntu_codename=$(lsb_release -cs 2>/dev/null || echo "noble")
-
-        if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
-            echo \
-                "deb [arch=$(dpkg --print-architecture) signed-by=$docker_key_path] $docker_repo \
-                $ubuntu_codename stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-            sudo apt-get update -qq
-        else
-            ui_info "Docker repository already configured"
-        fi
-        apt_install docker-ce docker-ce-cli containerd.io
-        sudo systemctl enable --now docker
-        sudo usermod -aG docker "$USER"
-        ui_success "Docker installed and enabled successfully. Please log out and log back in to use Docker without sudo."
-    else
+    if ! add_repository_key "$docker_key_url" "Docker" "$docker_key_path"; then
         ui_error "Failed to add Docker GPG key."
         ERRORS+=("Docker GPG key")
-    fi
-}
-
-install_portainer() {
-    if [ "$DRY_RUN" = true ]; then
-        ui_info "[DRY-RUN] Would create Portainer container."; return 0
+        return 1
     fi
 
-    ui_info "Creating Docker volume for Portainer data..."
-    if sudo docker volume create portainer_data &>/dev/null; then
-        ui_success "Created Docker volume for Portainer data."
+    local ubuntu_codename
+    ubuntu_codename=$(lsb_release -cs 2>/dev/null || echo "noble")
+
+    if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
+        echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=$docker_key_path] $docker_repo \
+            $ubuntu_codename stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update -qq
     else
-        ui_error "Failed to create Docker volume for Portainer."
-        ERRORS+=("Portainer volume creation")
-        return
+        ui_info "Docker repository already configured"
     fi
 
-    ui_info "Starting Portainer container..."
-    if sudo docker run -d -p 8000:8000 -p 9443:9443 --name=portainer --restart=always \
-       -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest &>/dev/null; then
-        ui_success "Portainer container is running."
-        ui_info "You can access Portainer at https://<your-server-ip>:9443"
-    else
-        ui_error "Failed to start the Portainer container."
-        ERRORS+=("Portainer container start")
+    if ! apt_install docker-ce docker-ce-cli containerd.io; then
+        ui_error "Docker package installation failed."
+        ERRORS+=("Docker package install")
+        return 1
     fi
+
+    sudo systemctl enable --now docker
+    sudo usermod -aG docker "$USER"
+    ui_success "Docker installed and enabled successfully. Please log out and log back in to use Docker without sudo."
+
+    # Wait for Docker socket to be ready
+    local wait_attempts=0
+    while [ ! -S /var/run/docker.sock ] && [ "$wait_attempts" -lt 10 ]; do
+        sleep 1
+        ((wait_attempts++))
+    done
 }
 
 install_flatpak_apps() {
@@ -400,7 +389,5 @@ if [[ "$INSTALL_MODE" != "server" ]]; then
 fi
 
 if [[ "$INSTALL_MODE" == "server" ]]; then
-    if install_docker; then
-        install_portainer
-    fi
+    install_docker
 fi

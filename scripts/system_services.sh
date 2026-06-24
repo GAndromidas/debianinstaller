@@ -40,17 +40,21 @@ enable_system_services() {
     # Services to be enabled. fstrim.timer is for SSD health.
     local services_to_enable=(
         "fstrim.timer"
-        "sshd.service"
     )
+    
+    # SSH service name differs by distro family
+    if [ "$IS_DEBIAN" = true ]; then
+        services_to_enable+=("ssh.service")
+    else
+        services_to_enable+=("sshd.service")
+    fi
     
     # Add distribution-specific services
     if [ "$IS_UBUNTU" = true ] || [ "$IS_MINT" = true ] || [ "$IS_ZORIN" = true ]; then
-        # Ubuntu-based systems benefit from these services
         services_to_enable+=("apt-daily.timer" "apt-daily-upgrade.timer")
     fi
     
     if [ "$IS_DEBIAN" = true ]; then
-        # Debian-specific services
         services_to_enable+=("cron.service")
     fi
     
