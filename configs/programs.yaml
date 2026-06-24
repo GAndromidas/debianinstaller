@@ -18,6 +18,8 @@ apt:
       description: "CPU frequency scaling tools"
     - name: dosfstools
       description: "DOS filesystem utilities"
+    - name: ethtool
+      description: "Network interface configuration and Wake-on-LAN support"
     - name: duf
       description: "Disk usage utility"
     - name: eza
@@ -64,6 +66,8 @@ apt:
       description: "RAR archive extractor"
     - name: unzip
       description: "ZIP archive extractor"
+    - name: wakeonlan
+      description: "Wake-on-LAN utility"
     - name: wget
       description: "File download tool"
     - name: wmctrl
@@ -85,6 +89,8 @@ essential:
     packages:
       - name: bat
         description: "Cat clone with syntax highlighting"
+      - name: ethtool
+        description: "Network interface configuration and Wake-on-LAN support"
       - name: btop
         description: "Resource monitor"
       - name: cmatrix
@@ -125,6 +131,8 @@ essential:
         description: "RAR archive extractor"
       - name: unzip
         description: "ZIP archive extractor"
+      - name: wakeonlan
+        description: "Wake-on-LAN utility"
       - name: wget
         description: "File download tool"
       - name: zoxide

@@ -187,8 +187,97 @@ configure_grub_timeout() {
     fi
 }
 
+# --- Wake-on-LAN Configuration ---
+is_laptop() {
+    [ -d /sys/class/power_supply/BAT0 ] || [ -d /sys/class/power_supply/BAT1 ]
+}
+
+get_ethernet_interfaces() {
+    for iface in /sys/class/net/*; do
+        iface=$(basename "$iface")
+        [[ "$iface" == "lo" ]] && continue
+        if [[ "$iface" =~ ^(enp|eth|ens|eno) ]]; then
+            echo "$iface"
+        fi
+    done
+}
+
+supports_wol() {
+    local iface="$1"
+    if ! command -v ethtool &>/dev/null; then
+        return 1
+    fi
+    local wol_support
+    wol_support=$(sudo ethtool "$iface" 2>/dev/null | awk '/Supports Wake-on:/ {print $4}')
+    [[ -n "$wol_support" && "$wol_support" == *"g"* ]]
+}
+
+enable_wol_interface() {
+    local iface="$1"
+    log_to_file "Enabling Wake-on-LAN on interface: $iface"
+    if sudo ethtool -s "$iface" wol g; then
+        local service_file="/etc/systemd/system/wol-${iface}.service"
+        sudo tee "$service_file" > /dev/null <<EOF
+[Unit]
+Description=Enable Wake-on-LAN for $iface
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/ethtool -s $iface wol g
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        sudo systemctl daemon-reload
+        if sudo systemctl enable "wol-${iface}.service"; then
+            ui_success "Wake-on-LAN enabled persistently on $iface"
+        fi
+        return 0
+    fi
+    return 1
+}
+
+configure_wakeonlan() {
+    if is_laptop; then
+        ui_info "Laptop detected — Wake-on-LAN skipped."
+        return 0
+    fi
+
+    if ! command -v ethtool &>/dev/null; then
+        apt_install ethtool
+    fi
+
+    local interfaces
+    interfaces=($(get_ethernet_interfaces))
+    if [ ${#interfaces[@]} -eq 0 ]; then
+        ui_info "No ethernet interfaces found — Wake-on-LAN skipped."
+        return 0
+    fi
+
+    ui_info "Found ${#interfaces[@]} ethernet interface(s)"
+    local enabled=0
+    for iface in "${interfaces[@]}"; do
+        if supports_wol "$iface"; then
+            if enable_wol_interface "$iface"; then
+                ((enabled++))
+            fi
+        else
+            ui_warn "Interface $iface does not support Wake-on-LAN"
+        fi
+    done
+
+    if [ "$enabled" -gt 0 ]; then
+        ui_success "Wake-on-LAN enabled on $enabled interface(s)"
+    else
+        ui_info "No interfaces could be configured for Wake-on-LAN."
+    fi
+}
+
 # --- Main Execution ---
 configure_ufw
 enable_system_services
 apply_distribution_optimizations
 configure_grub_timeout
+configure_wakeonlan

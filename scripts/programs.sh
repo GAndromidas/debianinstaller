@@ -264,8 +264,9 @@ install_docker() {
             ui_info "Docker repository already configured"
         fi
         apt_install docker-ce docker-ce-cli containerd.io
+        sudo systemctl enable --now docker
         sudo usermod -aG docker "$USER"
-        ui_success "Docker installed successfully. Please log out and log back in to use Docker without sudo."
+        ui_success "Docker installed and enabled successfully. Please log out and log back in to use Docker without sudo."
     else
         ui_error "Failed to add Docker GPG key."
         ERRORS+=("Docker GPG key")
