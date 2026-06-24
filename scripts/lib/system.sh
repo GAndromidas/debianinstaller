@@ -69,6 +69,20 @@ detect_distribution() {
             DISTRO_CODENAME="$DISTRIB_CODENAME"
         fi
 
+        if [ "$ID" = "ubuntu" ]; then
+            local de="${XDG_CURRENT_DESKTOP:-}"
+            case "$de" in
+                *KDE*)    DISTRO_NAME="Kubuntu" ;;
+                *XFCE*)   DISTRO_NAME="Xubuntu" ;;
+                *LXQt*)   DISTRO_NAME="Lubuntu" ;;
+                *Budgie*) DISTRO_NAME="Ubuntu Budgie" ;;
+                *MATE*)   DISTRO_NAME="Ubuntu MATE" ;;
+                *Cinnamon*) DISTRO_NAME="Ubuntu Cinnamon" ;;
+                *Unity*)  DISTRO_NAME="Ubuntu Unity" ;;
+                *GNOME*)  DISTRO_NAME="Ubuntu" ;;
+            esac
+        fi
+
         ui_info "Detected: $DISTRO_NAME $DISTRO_VERSION (codename: $DISTRO_CODENAME)"
     else
         ui_error "Cannot detect distribution. /etc/os-release not found."
