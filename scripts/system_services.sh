@@ -146,7 +146,49 @@ apply_distribution_optimizations() {
     ui_success "Distribution-specific optimizations applied."
 }
 
+# --- Function to Set GRUB Timeout ---
+configure_grub_timeout() {
+    ui_info "Setting GRUB timeout to 3 seconds..."
+
+    if [ "$DRY_RUN" = true ]; then
+        ui_info "[DRY-RUN] Would set GRUB_TIMEOUT=3 in /etc/default/grub and run update-grub."
+        return 0
+    fi
+
+    if [ ! -f /etc/default/grub ]; then
+        ui_warn "/etc/default/grub not found. Skipping GRUB configuration."
+        return
+    fi
+
+    sudo cp /etc/default/grub "/etc/default/grub.bak.$(date +%s)" 2>/dev/null || true
+
+    if grep -q "^GRUB_TIMEOUT=" /etc/default/grub; then
+        sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=3/' /etc/default/grub
+    else
+        echo 'GRUB_TIMEOUT=3' | sudo tee -a /etc/default/grub >/dev/null
+    fi
+
+    if command -v update-grub >/dev/null 2>&1; then
+        if sudo update-grub >/dev/null 2>&1; then
+            ui_success "GRUB timeout set to 3 seconds."
+        else
+            ui_warn "update-grub failed. GRUB config file updated but bootloader may not reflect changes."
+            ERRORS+=("update-grub failed")
+        fi
+    elif command -v grub-mkconfig >/dev/null 2>&1; then
+        if sudo grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1; then
+            ui_success "GRUB timeout set to 3 seconds."
+        else
+            ui_warn "grub-mkconfig failed. GRUB config file updated but bootloader may not reflect changes."
+            ERRORS+=("grub-mkconfig failed")
+        fi
+    else
+        ui_warn "Neither update-grub nor grub-mkconfig found. GRUB config file updated manually."
+    fi
+}
+
 # --- Main Execution ---
 configure_ufw
 enable_system_services
 apply_distribution_optimizations
+configure_grub_timeout
