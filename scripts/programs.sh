@@ -231,8 +231,25 @@ get_docker_repository() {
         echo "https://download.docker.com/linux/pop-os"
     elif [ "$IS_UBUNTU" = true ] || [ "$IS_MINT" = true ] || [ "$IS_ZORIN" = true ]; then
         echo "https://download.docker.com/linux/ubuntu"
+    elif [ "$IS_DEBIAN" = true ]; then
+        echo "https://download.docker.com/linux/debian"
     else
-        echo "https://download.docker.com/linux/ubuntu"
+        echo "https://download.docker.com/linux/debian"
+    fi
+}
+
+get_distro_codename() {
+    if [ "$IS_DEBIAN" = true ]; then
+        local debian_version
+        debian_version=$(cat /etc/debian_version 2>/dev/null | cut -d'.' -f1)
+        case "$debian_version" in
+            13) echo "trixie" ;;
+            12) echo "bookworm" ;;
+            11) echo "bullseye" ;;
+            *) echo "bookworm" ;;
+        esac
+    else
+        lsb_release -cs 2>/dev/null || echo "noble"
     fi
 }
 
@@ -248,6 +265,8 @@ install_docker() {
 
     local docker_repo
     docker_repo=$(get_docker_repository)
+    local distro_codename
+    distro_codename=$(get_distro_codename)
     local docker_key_url="${docker_repo}/gpg"
     local docker_key_path="/usr/share/keyrings/docker-archive-keyring.gpg"
 
@@ -257,29 +276,31 @@ install_docker() {
         return 1
     fi
 
-    local ubuntu_codename
-    ubuntu_codename=$(lsb_release -cs 2>/dev/null || echo "noble")
-
     if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
         echo \
             "deb [arch=$(dpkg --print-architecture) signed-by=$docker_key_path] $docker_repo \
-            $ubuntu_codename stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            $distro_codename stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sudo apt-get update -qq
     else
         ui_info "Docker repository already configured"
     fi
 
-    if ! apt_install docker-ce docker-ce-cli containerd.io; then
-        ui_error "Docker package installation failed."
-        ERRORS+=("Docker package install")
-        return 1
+    apt_install docker-ce docker-ce-cli containerd.io
+
+    if ! command -v docker >/dev/null 2>&1; then
+        ui_warn "Docker CE not available for $DISTRO_NAME $DISTRO_VERSION. Installing docker.io from distro repos..."
+        apt_install docker.io
+        if ! command -v docker >/dev/null 2>&1; then
+            ui_error "Failed to install Docker."
+            ERRORS+=("Docker install failed")
+            return 1
+        fi
     fi
 
     sudo systemctl enable --now docker
     sudo usermod -aG docker "$USER"
     ui_success "Docker installed and enabled successfully. Please log out and log back in to use Docker without sudo."
 
-    # Wait for Docker socket to be ready
     local wait_attempts=0
     while [ ! -S /var/run/docker.sock ] && [ "$wait_attempts" -lt 10 ]; do
         sleep 1
