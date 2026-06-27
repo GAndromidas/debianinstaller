@@ -56,7 +56,7 @@
         {
             "type": "packages",
             "key": " ",
-            "format": "{1} (apt)"
+            "format": "{dpkg} (apt)"
         },
         "break",
         {
