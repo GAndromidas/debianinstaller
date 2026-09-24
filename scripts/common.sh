@@ -19,6 +19,7 @@ if [ -z "${DEBIAN_INSTALLER_LIBS_LOADED:-}" ]; then
     source "$SCRIPT_LIB_DIR/system.sh"
     source "$SCRIPT_LIB_DIR/package.sh"
     source "$SCRIPT_LIB_DIR/config.sh"
+    source "$SCRIPT_LIB_DIR/state.sh"
     source "$SCRIPT_LIB_DIR/dashboard.sh"
 fi
 

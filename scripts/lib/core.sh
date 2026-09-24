@@ -101,6 +101,22 @@ format_time() {
 
 # Logging Functions
 
+init_logging() {
+  mkdir -p "$(dirname "$INSTALL_LOG")" 2>/dev/null || true
+  touch "$INSTALL_LOG" 2>/dev/null || true
+  {
+    echo "=========================================="
+    echo "Debian Installer Log"
+    echo "Started: $(date)"
+    echo "=========================================="
+    echo ""
+  } >> "$INSTALL_LOG"
+}
+
+init_core() {
+  init_logging
+}
+
 log_to_file() {
   echo "$1" >> "$INSTALL_LOG" 2>/dev/null || true
 }

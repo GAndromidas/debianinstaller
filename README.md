@@ -21,7 +21,7 @@ Transform your fresh Debian, Ubuntu, Linux Mint, Zorin OS, or Pop!_OS installati
 
 **Core Philosophy:**
 - 🎯 **Distribution-Aware** - Detects Debian, Ubuntu, Mint, Zorin OS, Pop!_OS with version-specific support
-- 🛡️ **Security-First** - Comprehensive hardening with Fail2ban and firewall configuration
+- 🛡️ **Security-First** - Comprehensive hardening with UFW firewall plus Fail2ban SSH protection
 - ⚡ **Performance-Optimized** - Intelligent package management and system tuning
 - 🔄 **Reliable** - Robust error handling, resume support, and fallback mechanisms
 
@@ -38,8 +38,8 @@ Transform your fresh Debian, Ubuntu, Linux Mint, Zorin OS, or Pop!_OS installati
   - Codename detection for precise package management
 
 - **Hardware-Aware Installation**
-  - CPU architecture detection (x86_64, ARM64)
-  - GPU driver optimization (NVIDIA, AMD, Intel)
+  - CPU type detection (x86_64, ARM64)
+  - Multi-GPU detection and driver optimization (NVIDIA, AMD, Intel — every GPU reported, hybrids included)
   - Storage type detection and optimization
   - Desktop environment recognition and integration
 
@@ -59,18 +59,17 @@ Transform your fresh Debian, Ubuntu, Linux Mint, Zorin OS, or Pop!_OS installati
 
 - **Security Hardening (Enabled by Default)**
   - UFW firewall configuration with secure policies
-  - Fail2ban SSH brute-force protection
+  - Fail2ban SSH brute-force protection (sshd jail verified post-install)
   - System service optimization
   - Automatic security updates configuration
 
 - **System Reliability**
   - Robust error handling and recovery
-  - Resume functionality for interrupted installations
-  - Atomic state tracking with failure logging
+  - Resume functionality for interrupted installations (state in /var/tmp survives reboot)
+  - Atomic state tracking with failure logging (COMPLETED/SKIPPED/FAILED)
   - Automatic sudo keepalive with cleanup on exit
   - Comprehensive logging and debugging
-  - Clean environment management
-  - Package dependency resolution
+  - Read-only `--check` health verification that changes nothing
 
 - **Data Integrity**
   - Automatic system maintenance tasks
@@ -78,38 +77,9 @@ Transform your fresh Debian, Ubuntu, Linux Mint, Zorin OS, or Pop!_OS installati
   - System cleanup and maintenance
   - Log rotation and management
 
-### 🎮 Installation Modes
+### 💻 Shell & Desktop Experience
 
-Choose the perfect setup for your use case:
-
-| Mode | Description | Best For |
-|------|-------------|----------|
-| **Desktop** | Full-featured desktop with all recommended packages | General users, enthusiasts |
-| **Server** | Headless configuration with Docker, Portainer, and SSH | Servers, VMs, headless deployments |
-
-### 🎮 Optional Gaming Mode
-
-Transform your system into a gaming powerhouse with one click:
-
-- Steam, Faugus Launcher (via Flatpak)
-- MangoHud performance overlay
-- GameMode for automatic performance tuning
-- Discord for gaming communication
-- Wine for Windows gaming compatibility
-- ProtonPlus for Proton-GE management
-
-### 🚀 User Experience
-
-- **Professional Dashboard Wizard**
-  - Full-screen persistent installation dashboard with live progress bar
-  - Real-time step tracking with timing for each phase
-  - Gum-enhanced UI with arrow-key menus and confirmations
-  - Automatic fallback to traditional prompts when gum is unavailable
-  - Batch installation with intelligent fallback
-  - Verbose/quiet/dry-run modes for flexibility
-  - Real-time package tracking and error reporting
-
-- **Enhanced Terminal Environment**
+- **Zsh + Starship**
   - Pre-configured Zsh with Oh-My-Zsh framework
   - Starship prompt for beautiful terminal design
   - Syntax highlighting and auto-completion
@@ -121,20 +91,41 @@ Transform your system into a gaming powerhouse with one click:
   - XFCE, MATE, Cinnamon, Budgie: Full support
   - Cosmic DE: Next-generation environment support
 
+### 🎮 Installation Modes
+
+Choose the perfect setup for your use case:
+
+| Mode | Description | Best For |
+|------|-------------|----------|
+| **Desktop** | Full-featured desktop with all recommended packages | General users, enthusiasts |
+| **Server** | Headless configuration with Docker, SSH, server utilities | Servers, VMs, headless deployments |
+
+### 🎮 Optional Gaming Mode
+
+Transform your system into a gaming powerhouse with one click (Desktop mode only):
+
+- Steam (with steam-installer fallback)
+- Faugus Launcher (via Flatpak)
+- MangoHud performance overlay
+- GameMode for automatic performance tuning
+- Discord for gaming communication
+- Wine for Windows gaming compatibility
+- ProtonPlus for Proton-GE management
+
 ---
 
 ### 📊 Supported Platforms
 
 ### Distributions
 - ✅ **Debian** 12+ (Bookworm, Trixie)
-- ✅ **Ubuntu** 22.04+ (Jammy, Noble, Mantic, Resolute Raccoon)
-- ✅ **Linux Mint** 21.x, 22.x (Vanessa, Vera, Victoria, Wilma)
-- ✅ **Zorin OS** 16.x, 17.x
+- ✅ **Ubuntu** 22.04+ (Jammy, Noble, and later)
+- ✅ **Linux Mint** 21.x, 22.x
+- ✅ **Zorin OS** 16.x, 17.x+
 - ✅ **Pop!_OS** 22.04+
 
 ### Hardware
 - ✅ **CPU**: Intel, AMD (x86_64, ARM64)
-- ✅ **GPU**: NVIDIA, AMD, Intel with appropriate drivers
+- ✅ **GPU**: NVIDIA, AMD, Intel with appropriate drivers (multi-GPU hybrids reported)
 - ✅ **Storage**: NVMe, SSD, HDD with optimizations
 - ✅ **Form Factors**: Desktop, Laptop, Virtual Machines
 
@@ -148,11 +139,11 @@ Transform your system into a gaming powerhouse with one click:
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Requirements
 
 - **Fresh Debian-based installation** (minimal base system)
 - **Active internet connection**
-- **User account with sudo privileges**
+- **User account with sudo privileges** (do NOT run as root)
 - **2GB+ free disk space**
 
 ### Installation
@@ -173,6 +164,8 @@ cd debianinstaller
 | **Desktop** | General desktop use | Full-featured setup with all recommended packages |
 | **Server** | Headless deployments | Docker, SSH, server utilities |
 
+With `--auto`, headless systems automatically get Server mode, everything else gets Desktop mode.
+
 ### Command-Line Options
 
 ```bash
@@ -180,10 +173,39 @@ cd debianinstaller
 
 OPTIONS:
   -h, --help      Show this help message and exit
+  -V, --version   Show version information and exit
   -v, --verbose   Enable verbose output (show all package installation details)
   -q, --quiet     Quiet mode (minimal output)
   -d, --dry-run   Preview what will be installed without making changes
+  -a, --auto      Automatically select the recommended installation mode
+  -y, --yes       Non-interactive mode: accept safe/default prompts automatically
+  -c, --check     Read-only health check (runs scripts/verify.sh, changes nothing)
 ```
+
+Examples:
+
+```bash
+./install.sh                # Interactive install
+./install.sh --verbose      # Detailed package installation output
+./install.sh --dry-run      # Preview changes without making them
+./install.sh --auto         # Automatically choose the recommended mode
+./install.sh --yes          # Unattended run with safe/default choices
+./install.sh --check        # Verify an installed system (read-only)
+```
+
+### Installation Steps
+
+| # | Step | Module | Notes |
+|---|------|--------|-------|
+| 1 | System Preparation | `modules/system_preparation.sh` | Asks before continuing on failure |
+| 2 | Shell Setup | `modules/shell_setup.sh` | Zsh + Oh-My-Zsh + Starship |
+| 3 | Programs Installation | `modules/programs.sh` | Package lists from `configs/programs.yaml` |
+| 4 | Gaming Mode | `modules/gaming_mode.sh` | Desktop only, opt-in; skipped on Server |
+| 5 | Desktop Shortcuts | `modules/shortcuts.sh` | Skipped on Server |
+| 6 | Fail2ban Setup | `modules/fail2ban.sh` | SSH brute-force protection |
+| 7 | System Services | `modules/system_services.sh` | Essential services |
+| 8 | Maintenance | `modules/maintenance.sh` | Cleanup and tuning |
+| 9 | Apply Custom Configurations | `modules/apply_configs.sh` | Always runs (latest dotfiles) |
 
 ### Installation Experience
 
@@ -205,19 +227,21 @@ The installer provides a professional dashboard wizard with real-time progress t
   │   8  ○ Pending                                       │
   │   9  ○ Pending                                       │
   ├──────────────────────────────────────────────────────┤
-  │ Log: ~/.debianinstaller.log            Ctrl+C cancel │
+  │ Log: /var/tmp/debianinstaller.log    Ctrl+C cancel │
   └──────────────────────────────────────────────────────┘
 ```
 
 When **gum** is installed, the menu uses arrow-key navigation:
+
 ```
   Your OS is: Ubuntu 24.04
-  
+
   This script will transform your fresh Debian-based installation
   into a fully configured, optimized system!
-  
-  > Desktop - Full desktop setup (recommended)
-    Server  - Minimal server setup
+
+  > Desktop (Gaming) - Full desktop setup with gaming mode (recommended)
+    Desktop (No Gaming) - Full desktop setup without gaming mode
+    Server  - Minimal server setup (Docker, SSH, etc.)
     Exit - Cancel installation
 ```
 
@@ -232,7 +256,7 @@ Without gum, a traditional numbered menu is shown instead.
 - **Package Availability Checking**: Verifies package availability before installation
 - **Automatic Fallback**: GitHub releases for missing packages (eza, fastfetch, ripgrep, fd)
 - **Version Management**: Always installs latest stable versions
-- **Architecture Support**: Multi-architecture package detection
+- **Multi-CPU-type package detection**: amd64/arm64 handled automatically
 
 ### Enhanced Package Tracking
 
@@ -255,7 +279,7 @@ After completion, the dashboard displays a full summary:
 
   ──────────────────────────────────────────────────────
 
-    8 completed, 0 failed, 1 skipped  |  Total: 4m 27s
+    8 completed, 0 failed, 0 warnings, 1 skipped  |  Total: 4m 27s
 ```
 
 ### Package Sources
@@ -264,6 +288,8 @@ After completion, the dashboard displays a full summary:
 - **GitHub Releases**: Automatic fallback for missing packages
 - **Flatpak**: Modern sandboxed applications (Faugus Launcher)
 - **Direct Downloads**: Vendor-specific packages (Discord, Starship)
+
+> Package lists live in `configs/programs.yaml` and `configs/gaming_mode.yaml` — edit those files to change what gets installed, not the scripts.
 
 ---
 
@@ -287,7 +313,7 @@ After completion, the dashboard displays a full summary:
 
 - **Firewall Setup**: UFW with secure default policies
 - **SSH Hardening**: Fail2ban brute-force protection
-- **System Updates**: Automatic security update configuration
+- **System Updates**: Automatic security update configuration (APT daily timers)
 - **User Permissions**: Proper sudo and access control
 
 ---
@@ -319,23 +345,101 @@ After completion, the dashboard displays a full summary:
 
 ```
 debianinstaller/
-├── install.sh              # Main installation script
-├── scripts/                # Core functionality modules
-│   ├── common.sh          # UI toolkit, dashboard wizard, shared utilities
-│   ├── programs.sh        # Package installation logic
-│   ├── shell_setup.sh     # ZSH and terminal configuration
-│   ├── gaming_mode.sh     # Gaming mode setup
-│   ├── shortcuts.sh       # Desktop environment shortcuts
-│   ├── fail2ban.sh        # Security configuration
-│   ├── system_services.sh  # Service management
-│   ├── maintenance.sh      # System cleanup tasks
-│   └── apply_configs.sh   # Configuration application
-├── configs/                # Configuration files
-│   ├── .zshrc             # ZSH configuration
-│   ├── starship.toml      # Starship prompt config
-│   └── MangoHud.conf      # Gaming overlay config
-└── README.md              # This documentation
+├── install.sh              # Main installation script (flags, traps, step runner)
+├── scripts/
+│   ├── common.sh           # Compatibility facade (show_menu, prompt_reboot)
+│   ├── verify.sh           # Read-only post-install health check
+│   ├── lib/                # Shared libraries
+│   │   ├── core.sh         # Logging, timing, globals
+│   │   ├── ui.sh           # Gum/terminal UI helpers
+│   │   ├── system.sh       # Distro detection, headless check
+│   │   ├── package.sh      # apt install helpers
+│   │   ├── config.sh       # YAML parsing helpers
+│   │   ├── state.sh        # Resume state (COMPLETED/SKIPPED/FAILED)
+│   │   └── dashboard.sh    # Wizard dashboard renderer
+│   └── modules/            # One install step per file
+│       ├── system_preparation.sh
+│       ├── shell_setup.sh
+│       ├── programs.sh
+│       ├── gaming_mode.sh
+│       ├── shortcuts.sh
+│       ├── fail2ban.sh
+│       ├── system_services.sh
+│       ├── maintenance.sh
+│       └── apply_configs.sh
+├── configs/                # Configuration files and package lists
+│   ├── programs.yaml       # Package lists (edit to change what is installed)
+│   ├── gaming_mode.yaml    # Gaming package lists
+│   ├── .zshrc              # ZSH configuration
+│   ├── starship.toml       # Starship prompt config
+│   └── MangoHud.conf       # Gaming overlay config
+├── tests/
+│   └── syntax.sh           # bash -n check over all scripts
+└── README.md               # This documentation
 ```
+
+---
+
+## 🔄 Resume, Logs & Safety
+
+### Resume
+
+Progress is tracked in `/var/tmp/debianinstaller.state` (one `COMPLETED:`/`SKIPPED:`/`FAILED:` line per step). `/var/tmp` survives reboots, so re-running `./install.sh` after an interruption or reboot automatically skips finished steps. Legacy `~/.debianinstaller.state` files migrate automatically.
+
+- Start fresh: `rm -f /var/tmp/debianinstaller.state`
+- A stale `FAILED:` line from an earlier interrupted run is cleared automatically after a run reaches the end.
+
+### Logs
+
+- Installation log: `/var/tmp/debianinstaller.log` (legacy `~/.debianinstaller.log` migrates automatically)
+- Every step's output is appended to the log; interactive prompts always use the terminal directly
+
+### Safety
+
+- Flags are parsed **before** any side effects — `--help`, `--version`, and `--check` never touch your system
+- `--dry-run` never writes resume state and never installs helpers (including gum)
+- `--check` / `./install.sh --check` execs `scripts/verify.sh`, which is fully read-only
+- No `ERR` trap: expected non-zero exit codes inside steps can't abort the whole run
+- `Ctrl+C` / termination is trapped for a clean stop with resume instructions, never a half-written state
+
+### Verify
+
+After rebooting into the configured system, run the read-only health check:
+
+```bash
+./install.sh --check
+# or
+bash scripts/verify.sh --verbose
+```
+
+It checks live booted state the install log cannot prove: GPU kernel drivers, UFW active status, fail2ban sshd jail, Wake-on-LAN flags, APT timers, zsh/starship, and gaming packages (via `dpkg -l`).
+
+---
+
+## 🧪 Testing
+
+```bash
+# Syntax-check every shell script in the repo
+bash tests/syntax.sh
+
+# Syntax-check a single file
+bash -n install.sh
+```
+
+---
+
+## 🔧 Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| `This script should NOT be run as root` | Run as a regular user with sudo privileges |
+| `No internet connection detected` | Check connectivity to debian.org |
+| `Insufficient disk space` | Free at least 2GB on `/` |
+| Sudo password prompt never appears | Steps redirect to the log; prompts use `/dev/tty` — run in a real terminal, not a pipe |
+| Resume re-runs a finished step | Check `/var/tmp/debianinstaller.state` for its `COMPLETED:` line |
+| Gum UI missing | Installed automatically via apt (GitHub `.deb` fallback); without it the classic menu is used |
+| Verify reports UFW inactive | `sudo ufw enable`, then re-run `--check` |
+| Verify reports sshd jail missing | Check `sudo fail2ban-client status` and `/etc/fail2ban/jail.local` |
 
 ---
 
@@ -348,7 +452,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 1. **Distribution Compatibility**: Ensure changes work across all supported distributions
 2. **Error Handling**: Implement robust error handling and user feedback
 3. **Documentation**: Update documentation for new features
-4. **Testing**: Test on multiple distributions when possible
+4. **Testing**: Run `bash tests/syntax.sh` and test on multiple distributions when possible
 
 ---
 
@@ -374,7 +478,7 @@ If you encounter any issues:
 
 1. Check the [Issues](https://github.com/GAndromidas/debianinstaller/issues) page
 2. Create a new issue with details about your system
-3. Include the installation log from `~/.debianinstaller.log`
+3. Include the installation log from `/var/tmp/debianinstaller.log`
 
 ---
 
@@ -385,5 +489,3 @@ If you encounter any issues:
 Made with ❤️ for the Debian-based Linux community
 
 </div>
-
-
