@@ -5,16 +5,16 @@ supports_gum() {
     command -v gum &>/dev/null
 }
 
-# Confirmation dialog
+# Confirmation dialog — Yes is the default in both gum and fallback modes.
 ui_confirm() {
     local question="$1"
     local description="${2:-}"
 
     if supports_gum; then
         if [ -n "$description" ]; then
-            gum style --foreground "$GUM_WARN" "$description" >&2 || true
+            gum style --foreground "$GUM_WARN" "$description" </dev/tty >/dev/tty 2>/dev/tty || true
         fi
-        if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "$question" >/dev/tty </dev/tty 2>/dev/null; then
+        if gum confirm --default --affirmative "Yes" --negative "No" --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" --selected.foreground "0" "$question" </dev/tty >/dev/tty 2>/dev/tty; then
             return 0
         else
             return 1
@@ -118,16 +118,16 @@ step() {
     log_to_file "STEP: $message"
 }
 
-# gum_confirm: user confirmation with gum (or fallback)
+# gum_confirm: user confirmation with gum (or fallback) — Yes is default.
 gum_confirm() {
     local question="$1"
     local description="${2:-}"
 
     if supports_gum; then
         if [ -n "$description" ]; then
-            gum style --foreground "$GUM_WARN" "$description" >&2 || true
+            gum style --foreground "$GUM_WARN" "$description" </dev/tty >/dev/tty 2>/dev/tty || true
         fi
-        if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "$question" >/dev/tty </dev/tty 2>/dev/null; then
+        if gum confirm --default --affirmative "Yes" --negative "No" --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" --selected.foreground "0" "$question" </dev/tty >/dev/tty 2>/dev/tty; then
             return 0
         else
             return 1

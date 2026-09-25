@@ -106,10 +106,14 @@ setup_distribution_repos() {
             # but we'll verify and add them if needed
         fi
         
-        # Check if we need to add repositories (safe glob handling)
+        # Check if we need to add repositories (safe glob handling).
+        # Ubuntu 24.04+ / 26.04 (resolute) use DEB822 .sources files
+        # (e.g. /etc/apt/sources.list.d/ubuntu.sources), not classic .list
+        # files — so both must be searched or universe/multiverse look
+        # "missing" even when already enabled.
         local has_universe=false
         grep -q "universe" /etc/apt/sources.list 2>/dev/null && has_universe=true
-        for f in /etc/apt/sources.list.d/*.list; do
+        for f in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
             [ -f "$f" ] && grep -q "universe" "$f" 2>/dev/null && has_universe=true && break
         done
         if [ "$has_universe" = false ]; then
@@ -120,7 +124,7 @@ setup_distribution_repos() {
         
         local has_multiverse=false
         grep -q "multiverse" /etc/apt/sources.list 2>/dev/null && has_multiverse=true
-        for f in /etc/apt/sources.list.d/*.list; do
+        for f in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
             [ -f "$f" ] && grep -q "multiverse" "$f" 2>/dev/null && has_multiverse=true && break
         done
         if [ "$has_multiverse" = false ]; then

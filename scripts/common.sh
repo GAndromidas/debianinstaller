@@ -148,9 +148,13 @@ prompt_reboot() {
 
   if command -v gum >/dev/null 2>&1; then
     echo ""
-    gum style --foreground "$GUM_WARN" "Ready to reboot your system?"
+    gum style --foreground "$GUM_WARN" "Ready to reboot your system?" </dev/tty >/dev/tty 2>/dev/tty || true
     echo ""
-    if gum confirm --default=true --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" "Reboot now?" >/dev/tty </dev/tty 2>/dev/null; then
+    # Explicit Yes/No labels with --default so Yes is preselected.
+    # All fds go to /dev/tty so the prompt renders even when stdout
+    # is redirected; selected.foreground gives contrast on the
+    # blue selected background.
+    if gum confirm --default --affirmative "Yes" --negative "No" --prompt.foreground "$GUM_PRIMARY" --selected.background "$GUM_PRIMARY" --selected.foreground "0" "Reboot now?" </dev/tty >/dev/tty 2>/dev/tty; then
       echo ""
       echo -e "${THEME_TEXT}Rebooting your system...${RESET}"
       echo -e "${THEME_HEADER}Thank you for using Debian Installer!${RESET}"

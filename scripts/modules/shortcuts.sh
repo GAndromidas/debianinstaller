@@ -109,14 +109,27 @@ setup_gnome_shortcuts() {
 }
 
 
-# --- KDE Plasma Shortcut Configuration ---
+# --- KDE Plasma Shortcut Configuration (Plasma 5 + 6) ---
 setup_kde_shortcuts() {
     ui_info "Detected KDE Plasma. Configuring shortcuts..."
     local config_file="$HOME/.config/kglobalshortcutsrc"
 
-    if ! command -v kwriteconfig5 >/dev/null 2>&1; then
-        ui_error "'kwriteconfig5' command not found. Cannot configure KDE shortcuts."
-        ERRORS+=("kwriteconfig5 missing")
+    # Kubuntu 26.04 ships Plasma 6 (kwriteconfig6/kreadconfig6).
+    # Older releases use the Qt5 variants. Prefer 6, fall back to 5.
+    local kwrite="" kread=""
+    if command -v kwriteconfig6 >/dev/null 2>&1; then
+        kwrite="kwriteconfig6"
+    elif command -v kwriteconfig5 >/dev/null 2>&1; then
+        kwrite="kwriteconfig5"
+    fi
+    if command -v kreadconfig6 >/dev/null 2>&1; then
+        kread="kreadconfig6"
+    elif command -v kreadconfig5 >/dev/null 2>&1; then
+        kread="kreadconfig5"
+    fi
+    if [[ -z "$kwrite" || -z "$kread" ]]; then
+        ui_error "Neither 'kwriteconfig6' nor 'kwriteconfig5' found. Cannot configure KDE shortcuts."
+        ERRORS+=("kwriteconfig missing (need kwriteconfig6 on Plasma 6 / kwriteconfig5 on Plasma 5)")
         return
     fi
 
@@ -128,9 +141,9 @@ setup_kde_shortcuts() {
     # --- Setup Meta+Q to Close Window ---
     ui_info "Setting up 'Meta+Q' to close windows..."
     local current_close_shortcut
-    current_close_shortcut=$(kreadconfig5 --file "$config_file" --group kwin --key "Window Close" || echo "Alt+F4")
+    current_close_shortcut=$("$kread" --file "$config_file" --group kwin --key "Window Close" || echo "Alt+F4")
     if ! [[ "$current_close_shortcut" == *",Super+Q"* ]]; then
-        kwriteconfig5 --file "$config_file" --group kwin --key "Window Close" "${current_close_shortcut},Super+Q" || true
+        "$kwrite" --file "$config_file" --group kwin --key "Window Close" "${current_close_shortcut},Super+Q" || true
         ui_success "Shortcut 'Meta+Q' added for closing windows."
     else
         ui_warn "Shortcut 'Meta+Q' for closing windows already seems to be set. Skipping."
@@ -138,7 +151,7 @@ setup_kde_shortcuts() {
 
     # --- Setup Meta+Enter to Launch Terminal (Konsole) ---
     ui_info "Setting up 'Meta+Enter' to launch Konsole..."
-    kwriteconfig5 --file "$config_file" --group "org.kde.konsole.desktop" --key "new-window" "Meta+Return,none,New Window" || true
+    "$kwrite" --file "$config_file" --group "org.kde.konsole.desktop" --key "new-window" "Meta+Return,none,New Window" || true
     ui_success "Attempted to set 'Meta+Enter' to launch Konsole. You may need to log out for this to apply."
 
     # Reload the shortcut daemon

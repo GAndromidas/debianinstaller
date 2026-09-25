@@ -73,6 +73,12 @@ install_flatpak_packages() {
             ui_info "[DRY-RUN] Would install Flatpak: $pkg"
             continue
         fi
+        # Avoid Discord double-install: install_discord() already installs
+        # the native .deb — skip the Flatpak if a Discord binary exists.
+        if [[ "$pkg" == "com.discordapp.Discord" ]] && command -v discord >/dev/null 2>&1; then
+            ui_info "Discord already installed via .deb — skipping Flatpak duplicate."
+            continue
+        fi
         ui_info "Installing Flatpak: $pkg..."
         if sudo flatpak install -y flathub "$pkg" >/dev/null 2>&1; then
             ui_success "Flatpak $pkg installed successfully."

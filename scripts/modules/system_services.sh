@@ -42,11 +42,23 @@ enable_system_services() {
         "fstrim.timer"
     )
     
-    # SSH service name differs by distro family
-    if [ "$IS_DEBIAN" = true ]; then
-        services_to_enable+=("ssh.service")
+    # SSH service name: both Debian and Ubuntu families provide ssh.service
+    # (sshd.service is at most an alias). Probe which unit actually exists
+    # instead of guessing by distro — Kubuntu 26.04 only has ssh.service,
+    # so hardcoding sshd.service breaks it (see debianinstaller.log:
+    # "Service unit 'sshd.service' not found").
+    local ssh_service=""
+    if systemctl list-unit-files 2>/dev/null | grep -q "^ssh\.service"; then
+        ssh_service="ssh.service"
+    elif systemctl list-unit-files 2>/dev/null | grep -q "^sshd\.service"; then
+        ssh_service="sshd.service"
+    fi
+    if [[ -n "$ssh_service" ]]; then
+        services_to_enable+=("$ssh_service")
     else
-        services_to_enable+=("sshd.service")
+        # openssh-server is only installed in server mode (see
+        # configs/programs.yaml). On desktops this is expected, not an error.
+        ui_info "No SSH server unit found (openssh-server not installed) — skipping SSH service enable."
     fi
     
     # Add distribution-specific services
@@ -108,9 +120,11 @@ apply_distribution_optimizations() {
             if command -v snap >/dev/null 2>&1; then
                 ui_info "Snap detected - Ubuntu 26.04+ may have PipeWire as snap"
                 # Note: In Ubuntu 26.04, removing snapd may break audio if PipeWire is snap-based
-                # We'll keep snapd but optimize its services
+                # We'll keep snapd but optimize its services.
+                # Do NOT disable snapd.refresh.timer — that would stop all
+                # snap security updates. Only disable the one-shot import
+                # helper which is safe to skip on a configured system.
                 sudo systemctl disable snapd.autoimport.service 2>/dev/null || true
-                sudo systemctl disable snapd.refresh.timer 2>/dev/null || true
             fi
             
             # Ubuntu 26.04 uses cgroup v2 only, ensure proper configuration

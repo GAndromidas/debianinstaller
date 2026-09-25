@@ -157,7 +157,14 @@ install_ucaresystem_core() {
        [ -f "$temp_deb" ] && \
        sudo dpkg -i "$temp_deb" 2>/dev/null; then
         ui_success "ucaresystem-core installed successfully."
-        rm -f "$temp_deb"; return 0
+        rm -f "$temp_deb"
+        # ucaresystem-core's postinst adds a Utappia PPA pinned to jammy
+        # (see debianinstaller.log: ".../utappia/stable/ubuntu jammy main").
+        # On resolute/noble that foreign-codename repo can break apt, so warn.
+        if [[ "${DISTRO_CODENAME:-}" != "jammy" ]] && grep -rq "utappia.*jammy" /etc/apt/sources.list.d/ 2>/dev/null; then
+            ui_warn "ucaresystem-core added a 'jammy' Utappia repo on $DISTRO_NAME $DISTRO_VERSION ($DISTRO_CODENAME) — verify 'apt update' works; you may need to update /etc/apt/sources.list.d/utappia.list."
+        fi
+        return 0
     else
         ui_error "Failed to install ucaresystem-core."
         rm -f "$temp_deb"; return 1
