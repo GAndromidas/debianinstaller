@@ -77,18 +77,17 @@ export FZF_CTRL_R_OPTS="
 "
 
 # Clean System
-
 clean() {
-  echo "🧹 Starting System Deep Clean..."
+  echo "🧹 Starting Debian Deep Clean..."
 
-  echo "→ Removing unnecessary dependencies..."
-  sudo apt-get autoremove --purge -y
+  echo "→ Purging orphaned dependencies..."
+  sudo apt-get autoremove --purge -y -qq
 
-  echo "→ Clearing APT cache..."
-  sudo apt-get autoclean -y
-  sudo apt-get clean
+  echo "→ Clearing APT package cache..."
+  sudo apt-get autoclean -y -qq
+  sudo apt-get clean -qq
 
-  echo "→ Removing orphaned packages..."
+  echo "→ Removing deborphan packages..."
   if command -v deborphan >/dev/null 2>&1; then
     local orphans=$(deborphan)
     if [[ -n "$orphans" ]]; then
@@ -97,13 +96,18 @@ clean() {
   fi
 
   echo "→ Vacuuming systemd journal (keep 3 days)..."
-  sudo journalctl --vacuum-time=3d
+  sudo journalctl --vacuum-time=3d --quiet
 
-  echo "→ Wiping thumbnail & browser caches..."
-  rm -rf ~/.cache/thumbnails/* 2>/dev/null
-  find ~/.cache/mozilla/firefox -name "cache2" -type d -exec rm -rf {} + 2>/dev/null
+  # Docker cleanup (applies if running Docker services)
+  if command -v docker >/dev/null 2>&1; then
+    echo "→ Pruning unused Docker data..."
+    sudo docker system prune -f >/dev/null 2>&1
+  fi
 
-  echo "✅ System clean complete!"
+  echo "→ Clearing CLI temp cache..."
+  rm -rf ~/.cache/* 2>/dev/null
+
+  echo "✅ Debian cleanup complete!"
 }
 
 # Aliases
