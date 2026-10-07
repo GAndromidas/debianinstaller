@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
+# Include guard — safe to source multiple times via install.sh + common.sh.
+if [[ -n "${_DEBIANINSTALLER_STATE_SH_LOADED:-}" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+_DEBIANINSTALLER_STATE_SH_LOADED=1
+
 # Persistent installation state. Kept separate from orchestration so state
 # handling can evolve without changing installation modules.
 STATE_FILE="${STATE_FILE:-/var/tmp/debianinstaller.state}"

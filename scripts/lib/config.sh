@@ -1,6 +1,12 @@
 #!/bin/bash
 set -uo pipefail
 
+# Include guard — safe to source multiple times via install.sh + common.sh.
+if [[ -n "${_DEBIANINSTALLER_CONFIG_SH_LOADED:-}" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+_DEBIANINSTALLER_CONFIG_SH_LOADED=1
+
 # Check if yq is available
 has_yq() {
     command -v yq &>/dev/null

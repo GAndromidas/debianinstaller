@@ -120,6 +120,11 @@ source "$SCRIPTS_DIR/lib/system.sh"
 source "$SCRIPTS_DIR/lib/package.sh"
 source "$SCRIPTS_DIR/lib/config.sh"
 source "$SCRIPTS_DIR/lib/state.sh"
+# Mark libs as loaded BEFORE common.sh so its guarded re-source block is
+# skipped (each lib also has its own include guard as a second defense for
+# the readonly theme variables in core.sh).
+DEBIAN_INSTALLER_LIBS_LOADED=1
+export DEBIAN_INSTALLER_LIBS_LOADED
 source "$SCRIPTS_DIR/common.sh"
 source "$SCRIPTS_DIR/lib/dashboard.sh"
 

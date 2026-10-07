@@ -1,6 +1,14 @@
 #!/bin/bash
 set -uo pipefail
 
+# Include guard — install.sh sources lib/*.sh and then common.sh, which
+# re-sources them. Without this, the readonly declarations below fail
+# with "readonly variable" on the second source.
+if [[ -n "${_DEBIANINSTALLER_CORE_SH_LOADED:-}" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+_DEBIANINSTALLER_CORE_SH_LOADED=1
+
 # Color Codes (kept for backward compatibility)
 RED='\033[0;31m'
 GREEN='\033[0;32m'

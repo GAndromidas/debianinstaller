@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Include guard — safe to source multiple times via install.sh + common.sh.
+if [[ -n "${_DEBIANINSTALLER_UI_SH_LOADED:-}" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+_DEBIANINSTALLER_UI_SH_LOADED=1
+
 # Check if gum is available
 supports_gum() {
     command -v gum &>/dev/null

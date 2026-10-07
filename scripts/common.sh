@@ -21,6 +21,8 @@ if [ -z "${DEBIAN_INSTALLER_LIBS_LOADED:-}" ]; then
     source "$SCRIPT_LIB_DIR/config.sh"
     source "$SCRIPT_LIB_DIR/state.sh"
     source "$SCRIPT_LIB_DIR/dashboard.sh"
+    DEBIAN_INSTALLER_LIBS_LOADED=1
+    export DEBIAN_INSTALLER_LIBS_LOADED
 fi
 
 # ============================================================================

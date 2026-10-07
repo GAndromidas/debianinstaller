@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Include guard — safe to source multiple times via install.sh + common.sh.
+if [[ -n "${_DEBIANINSTALLER_DASHBOARD_SH_LOADED:-}" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+_DEBIANINSTALLER_DASHBOARD_SH_LOADED=1
+
 DASHBOARD_START_TIME=0
 DASHBOARD_STEP_TIMES=()
 DASHBOARD_STEP_NAMES=()
