@@ -39,6 +39,22 @@ readonly GUM_MUTED="8"
 readonly GUM_HEADER="33"
 readonly GUM_BORDER="33"
 
+# stdout discipline shared by ALL UI helpers:
+#   - styled output only when stdout is a real TTY (checked at emit time —
+#     dashboard_run redirects module stdout INTO the install log, so during
+#     module execution stdout is never a TTY);
+#   - plain text for redirected streams — INSTALL_LOG stays ANSI-free even
+#     when gum is missing and the THEME_* colors are technically set.
+__ui_emit() {
+    local styled="$1"
+    local plain="$2"
+    if [[ -t 1 ]]; then
+        printf '%b\n' "$styled"
+    else
+        printf '%s\n' "$plain"
+    fi
+}
+
 # Global Variables
 ERRORS=()
 INSTALLED_PACKAGES=()
@@ -50,22 +66,33 @@ VERBOSE_MODE=false
 QUIET_MODE=false
 DRY_RUN=false
 
-# Terminal helpers
+# Terminal helpers — border drawing is TTY-only: under dashboard_run the
+# module's stdout IS the install log, and border/ANSI rows would pollute it.
+__borders_draw() {
+    [[ -t 1 ]]
+}
+
 __term_width() {
     tput cols 2>/dev/null || echo 80
 }
 
 __print_top_border() {
+    if ! __borders_draw; then return 0; fi
+
     local w=$(__term_width)
     echo -e "${THEME_BORDER}+$(printf '%*s' $((w - 2)) '' | tr ' ' '-')+${RESET}"
 }
 
 __print_bottom_border() {
+    if ! __borders_draw; then return 0; fi
+
     local w=$(__term_width)
     echo -e "${THEME_BORDER}+$(printf '%*s' $((w - 2)) '' | tr ' ' '-')+${RESET}"
 }
 
 __print_border_line() {
+    if ! __borders_draw; then return 0; fi
+
     local content="$1"
     local w=$(__term_width)
     local pad=$((w - ${#content} - 4))
@@ -74,16 +101,22 @@ __print_border_line() {
 }
 
 __print_thick_top_border() {
+    if ! __borders_draw; then return 0; fi
+
     local w=$(__term_width)
     echo -e "${THEME_BORDER}#$(printf '%*s' $((w - 2)) '' | tr ' ' '=')#${RESET}"
 }
 
 __print_thick_bottom_border() {
+    if ! __borders_draw; then return 0; fi
+
     local w=$(__term_width)
     echo -e "${THEME_BORDER}#$(printf '%*s' $((w - 2)) '' | tr ' ' '=')#${RESET}"
 }
 
 __print_thick_border_line() {
+    if ! __borders_draw; then return 0; fi
+
     local content="$1"
     local w=$(__term_width)
     local pad=$((w - ${#content} - 4))
@@ -163,10 +196,11 @@ log_both() {
 
 log_performance() {
     local step_name="$1"
-    local current_time=$(date +%s)
-    local elapsed=$((current_time - START_TIME))
+    local elapsed=$SECONDS
+    [[ -n "${START_TIME_SEC:-}" ]] && elapsed=$(( SECONDS - START_TIME_SEC ))
     local minutes=$((elapsed / 60))
     local seconds=$((elapsed % 60))
-    echo -e "${THEME_TEXT}$step_name completed in ${minutes}m ${seconds}s (${elapsed}s)${RESET}"
+    __ui_emit "${THEME_TEXT}$step_name completed in ${minutes}m ${seconds}s (${elapsed}s)" \
+              "$step_name completed in ${minutes}m ${seconds}s (${elapsed}s)"
     log_to_file "$step_name completed in ${minutes}m ${seconds}s (${elapsed}s)"
 }

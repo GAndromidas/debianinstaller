@@ -59,11 +59,21 @@ setup_gnome_shortcuts() {
     local close_key="org.gnome.desktop.wm.keybindings close"
     local current_close_bindings
     current_close_bindings=$(gsettings get $close_key 2>/dev/null || echo "['<Alt>F4']")
+    # Modern GNOME answers "@as []" for unset keys (a typed-empty value) —
+    # the old sed appended straight into that literal and produced an
+    # invalid typed expression, so Meta+Q was silently never applied.
     if [[ "$current_close_bindings" != *"'<Super>q'"* ]]; then
         local new_bindings
-        new_bindings=$(echo "$current_close_bindings" | sed "s/]$/, '<Super>q']/")
-        gsettings set $close_key "$new_bindings" || true
-        ui_success "Shortcut 'Meta+Q' added for closing windows."
+        if [[ "$current_close_bindings" == "@as []" || "$current_close_bindings" == "[]" ]]; then
+            new_bindings="['<Super>q']"
+        else
+            new_bindings=$(echo "$current_close_bindings" | sed "s/]$/, '<Super>q']/")
+        fi
+        if gsettings set $close_key "$new_bindings"; then
+            ui_success "Shortcut 'Meta+Q' added for closing windows."
+        else
+            ui_warn "Shortcut 'Meta+Q' could not be set (keybinding value: $new_bindings)"
+        fi
     else
         ui_warn "Shortcut 'Meta+Q' for closing windows already seems to be set. Skipping."
     fi
@@ -199,14 +209,32 @@ setup_mate_shortcuts() {
         return
     fi
 
-    # Setup terminal shortcut
-    ui_info "Setting up 'Meta+Enter' to launch terminal..."
-    gsettings set org.mate.desktop.keybindings terminal "<Super>Return" || true
-    
-    # Setup window close shortcut
-    ui_info "Setting up 'Meta+Q' to close windows..."
-    gsettings set org.mate.Marco.global-keybindings close "<Super>q" || true
-    
+    # Only write when the target schema actually exists — the previous
+    # org.mate.desktop.keybindings "terminal" key and
+    # Marco.global-keybindings "close" path do not exist in real MATE, so
+    # both calls silently no-oped while the step claimed success.
+    gsettings list-schemas 2>/dev/null | grep -q '^org\. mate\.Marco\.window-keybindings$' || {
+        ui_warn "Marco window-keybindings schema not found — skipping MATE window shortcut"
+        ui_info "Configure Meta+Q manually: Control Center > Keyboard Shortcuts > Windows"
+    }
+
+    # Window close (Meta+Q) — correct Marco schema path
+    if gsettings list-keys org.mate.Marco.window-keybindings 2>/dev/null | grep -qx "close"; then
+        ui_info "Setting up 'Meta+Q' to close windows..."
+        gsettings set org.mate.Marco.window-keybindings close "<Super>q" || \
+            ui_warn "Meta+Q (close window) could not be set"
+    fi
+
+    # Terminal launcher (Meta+Enter) — a terminal-launch keybinding lives in
+    # org.mate.mate-terminal.keybindings if the terminal ships it.
+    if gsettings list-schemas 2>/dev/null | grep -q '^org\. mate\.mate-terminal\.keybindings$'; then
+        ui_info "Setting up Meta+Enter for mate-terminal..."
+        gsettings set org.mate.mate-terminal.keybindings new-window "<Super>Return" 2>/dev/null || true
+    else
+        ui_warn "No mate-terminal keybindings schema — skipping Meta+Enter"
+    fi
+
+    if [ "${DRY_RUN:-false}" = true ]; then ui_warn "DRY-RUN: no MATE changes"; fi
     ui_success "MATE shortcuts configured successfully."
 }
 
@@ -225,9 +253,12 @@ setup_cinnamon_shortcuts() {
         return
     fi
 
-    # Setup terminal shortcut (Meta+Enter)
-    ui_info "Setting up 'Meta+Enter' to launch terminal..."
-    gsettings set org.cinnamon.desktop.keybindings custom-list "['custom0', 'custom1']" || true
+    # Extend custom-list, never rewind it: hardcoding "['custom0','custom1']"
+    # wiped any preexisting custom bindings.
+    _cinn_customs=$(gsettings get org.cinnamon.desktop.keybindings custom-list 2>/dev/null || echo "['custom0','custom1']")
+    if [[ "$_cinn_customs" != *"custom0"* ]]; then
+        gsettings set org.cinnamon.desktop.keybindings custom-list "[${_cinn_customs#[[]}, 'custom0', 'custom1']" || true
+    fi
     gsettings set org.cinnamon.desktop.keybindings.custom-keybinding:/org/cinnamon/desktop/keybindings/custom-keybindings/custom0/ name "Launch Terminal" || true
     gsettings set org.cinnamon.desktop.keybindings.custom-keybinding:/org/cinnamon/desktop/keybindings/custom-keybindings/custom0/ command "gnome-terminal" || true
     gsettings set org.cinnamon.desktop.keybindings.custom-keybinding:/org/cinnamon/desktop/keybindings/custom-keybindings/custom0/ binding "['<Super>Return']" || true
@@ -290,15 +321,6 @@ setup_cosmic_shortcuts() {
         ui_info "     - Command: 'cosmic-close' or similar"
         ui_info "     - Shortcut: Meta+Q"
         
-        # Try to create a basic configuration file if the directory exists
-        local cosmic_config_dir="$HOME/.config/cosmic"
-        if [ -d "$cosmic_config_dir" ]; then
-            ui_info "Cosmic config directory found. Creating shortcut configuration..."
-            # Note: This is a placeholder - actual Cosmic configuration format may differ
-            echo "# Cosmic DE shortcuts configuration" > "$cosmic_config_dir/shortcuts.conf" 2>/dev/null || true
-            echo "meta+terminal=cosmic-term" >> "$cosmic_config_dir/shortcuts.conf" 2>/dev/null || true
-            echo "meta+close=close-window" >> "$cosmic_config_dir/shortcuts.conf" 2>/dev/null || true
-        fi
     else
         ui_warn "Cosmic settings tools not found. Manual configuration required."
         ui_info "Please configure shortcuts manually in Cosmic Settings:"

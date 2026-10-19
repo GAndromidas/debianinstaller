@@ -22,15 +22,18 @@ configure_fail2ban() {
 
     local jail_local_file="/etc/fail2ban/jail.local"
     # Configuration with a slightly longer ban time for better security
+    # backend=systemd lives in [sshd] ONLY: in [DEFAULT] it silently
+    # re-targets every jail on this box away from the distribution
+    # defaults (rssyslog/journal autodetection).
     local jail_config="[DEFAULT]
 ignoreip = 127.0.0.1/8 ::1
 bantime  = 1h
 findtime = 10m
 maxretry = 5
-backend  = systemd
 
 [sshd]
 enabled = true
+backend = systemd
 "
 
     if [ "$DRY_RUN" = true ]; then
@@ -56,8 +59,14 @@ enabled = true
 
     ui_info "Enabling and restarting Fail2ban service..."
     if sudo systemctl enable --now fail2ban &>/dev/null && sudo systemctl restart fail2ban &>/dev/null; then
-        sleep 1 # Give the service a moment to start
-        if systemctl is-active --quiet fail2ban; then
+        # Bounded retry: a single sleep-then-check false-failed on slow disks.
+        local _tries=0 _active=false
+        while [ "$_tries" -lt 5 ]; do
+            if systemctl is-active --quiet fail2ban; then _active=true; break; fi
+            sleep 1
+            _tries=$((_tries + 1))
+        done
+        if [ "$_active" = true ]; then
             ui_success "Fail2ban service is active and running."
         else
             ui_error "Fail2ban service failed to start."

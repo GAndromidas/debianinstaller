@@ -36,6 +36,20 @@ state_write() {
   ) 200>>"$STATE_FILE" 2>/dev/null
 }
 
+# Remove one exact line from the state file under the same exclusive lock.
+state_remove_line() {
+  local line="$1"
+  [[ -f "$STATE_FILE" ]] || return 0
+  local tmp
+  tmp=$(mktemp "${STATE_FILE}.tmp.XXXXXX") || return 1
+  (
+    flock -x 200
+    grep -vFx "$line" "$STATE_FILE" > "$tmp" || true  # rc1 = all lines removed — fine
+    mv -f "$tmp" "$STATE_FILE"
+  ) 200>>"$STATE_FILE" 2>/dev/null
+  rm -f "$tmp" 2>/dev/null || true
+}
+
 mark_step_complete_with_progress() {
   # Preview runs must never mutate persistent resume state.
   if [[ "${DRY_RUN:-false}" == true ]]; then
@@ -48,6 +62,14 @@ mark_step_complete_with_progress() {
     completed|skipped|failed) state_write "${status^^}: $step_name" ;;
     *) log_error "Invalid state '$status' for step '$step_name'"; return 1 ;;
   esac
+
+  # Per-step cleanup of a stale FAILED marker when a step retried and now
+  # succeeded (or was explicitly skipped): without this a failure from an
+  # interrupted earlier run keeps reporting the whole install as failed,
+  # and a run-end blanket clear would mask genuinely failed steps.
+  if [[ "$status" == "completed" || "$status" == "skipped" ]]; then
+    state_remove_line "FAILED: $step_name"
+  fi
 }
 
 is_step_complete() {
@@ -80,9 +102,10 @@ state_clear_failures() {
   [[ -f "$STATE_FILE" ]] || return 0
   local tmp
   tmp=$(mktemp "${STATE_FILE}.tmp.XXXXXX") || return 1
-  grep -v '^FAILED:' "$STATE_FILE" > "$tmp" || true
-  if ! mv -f "$tmp" "$STATE_FILE"; then
-    rm -f "$tmp"
-    return 1
-  fi
+  (
+    flock -x 200
+    grep -v '^FAILED:' "$STATE_FILE" > "$tmp" || true  # rc1 = nothing left — fine
+    mv -f "$tmp" "$STATE_FILE"
+  ) 200>>"$STATE_FILE" 2>/dev/null
+  rm -f "$tmp" 2>/dev/null || true
 }

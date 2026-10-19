@@ -49,9 +49,12 @@ load_package_lists_from_yaml() {
         read_yaml_packages_with_desc "$PROGRAMS_YAML" ".distributions.$distro_key.packages" distro_packages temp_desc
     fi
 
-    # DE-specific from desktop_environments section
-    local de
-    de=$(echo "${XDG_CURRENT_DESKTOP:-}" | tr '[:upper:]' '[:lower:]')
+    # DE-specific from desktop_environments section. XDG_CURRENT_DESKTOP is
+    # colon-composed on hybrids ("ubuntu:GNOME", "zorin:gnome") — take the
+    # LAST component and lowercase it to match the bare YAML keys ("gnome").
+    local de_raw="${XDG_CURRENT_DESKTOP:-}" de=""
+    de="${de_raw##*:}"
+    de="${de,,}"
     if [ -n "$de" ]; then
         read_yaml_packages "$PROGRAMS_YAML" ".desktop_environments.$de.install" de_install_packages
     fi
@@ -304,8 +307,18 @@ install_docker() {
         fi
     fi
 
-    sudo systemctl enable --now docker
-    sudo usermod -aG docker "$USER"
+    if ! sudo systemctl enable --now docker; then
+        ui_warn "Failed to enable docker service."
+        ERRORS+=("docker service enable failed")
+    fi
+    # usermod the real invoking user (SUDO_USER survives sudo; $USER can be
+    # unset in non-login contexts and a `set -u` aborts the whole module).
+    local _docker_user="${SUDO_USER:-${USER:-}}"
+    if [ -n "$_docker_user" ] && [ "$_docker_user" != "root" ]; then
+        sudo usermod -aG docker "$_docker_user"
+    else
+        ui_warn "Could not determine invoking user - docker group membership not applied"
+    fi
     ui_success "Docker installed and enabled successfully. Please log out and log back in to use Docker without sudo."
 
     local wait_attempts=0
@@ -321,25 +334,40 @@ install_flatpak_apps() {
         return
     fi
 
+    local f_install=()
     for pkg in "${flatpak_packages[@]}"; do
         if [ "$DRY_RUN" = true ]; then
             ui_info "[DRY-RUN] Would install Flatpak: $pkg"
             continue
         fi
-        ui_info "Installing Flatpak: $pkg..."
-        if sudo flatpak install -y flathub "$pkg" >/dev/null 2>&1; then
-            ui_success "Flatpak $pkg installed successfully."
-            INSTALLED_PACKAGES+=("$pkg (Flatpak)")
-        else
-            ui_error "Failed to install Flatpak: $pkg"
-            ERRORS+=("Flatpak $pkg install")
-        fi
+        f_install+=("$pkg")
     done
+    if [ ${#f_install[@]} -gt 0 ]; then
+        ui_info "Installing ${#f_install[@]} Flatpak app(s) in one transaction..."
+        local _f_out=""
+        if _f_out=$(sudo flatpak install -y flathub "${f_install[@]}" 2>&1); then
+            ui_success "Flatpak batch installed successfully."
+            INSTALLED_PACKAGES+=("${f_install[@]} (Flatpak)")
+        else
+            printf '\n[BATCH FAILURE] flatpak install\n%s\n' "$_f_out" >> "$INSTALL_LOG" 2>/dev/null || true
+            ui_warn "Batch Flatpak install failed - falling back per-app"
+            for pkg in "${f_install[@]}"; do
+                if sudo flatpak install -y flathub "$pkg" >/dev/null 2>&1; then
+                    ui_success "Flatpak $pkg installed successfully."
+                    INSTALLED_PACKAGES+=("$pkg (Flatpak)")
+                else
+                    ui_error "Failed to install Flatpak: $pkg"
+                    ERRORS+=("Flatpak $pkg install")
+                fi
+            done
+        fi
+    fi
 
-    # DE-specific Flatpak (e.g., GNOME Extensions Manager)
-    local de
-    de=$(echo "${XDG_CURRENT_DESKTOP:-}" | tr '[:upper:]' '[:lower:]')
-    local de_flatpaks=()
+    # DE-specific Flatpak (e.g., GNOME Extensions Manager) — same last-
+    # component lowercase normalization as the DE apt path above.
+    local de_raw="${XDG_CURRENT_DESKTOP:-}" de="" de_flatpaks=()
+    de="${de_raw##*:}"
+    de="${de,,}"
     if yaml_key_exists "$PROGRAMS_YAML" ".desktop_environments.$de.flatpak"; then
         read_yaml_packages "$PROGRAMS_YAML" ".desktop_environments.$de.flatpak" de_flatpaks
         for pkg in "${de_flatpaks[@]}"; do
@@ -375,23 +403,11 @@ install_apt_packages() {
         fi
     fi
 
-    # Filter packages by availability
-    local available=()
-    local unavailable=()
-    for pkg in "${essential_packages[@]}"; do
-        if is_package_available "$pkg"; then
-            available+=("$pkg")
-        else
-            unavailable+=("$pkg")
-        fi
-    done
-
-    if [[ ${#available[@]} -gt 0 ]]; then
-        install_package_smart "${available[@]}"
-    fi
-
-    if [[ ${#unavailable[@]} -gt 0 ]]; then
-        ui_warn "Packages not available in repositories: ${unavailable[*]}"
+    # install_package_smart probes availability itself (single apt-cache
+    # pass) with the same "not available - skipping" diagnostics - the old
+    # pre-filter duplicated the whole index walk.
+    if [[ ${#essential_packages[@]} -gt 0 ]]; then
+        install_package_smart "${essential_packages[@]}"
     fi
 }
 

@@ -145,7 +145,19 @@ start_sudo_keepalive() {
   if ! sudo -n true 2>/dev/null; then
     return 1
   fi
-  ( while true; do sudo -n true 2>/dev/null; sleep 50; kill -0 $$ 2>/dev/null || exit 0; done ) &
+  # PID-reuse guard: `kill -0 $$` alone can latch onto an unrelated process
+  # that recycled the parent's PID after death and keep refreshing the sudo
+  # stamp forever. The kernel's proc start-time never matches on reuse.
+  ( _ka_start=$( raw=$(cat "/proc/$$/stat" 2>/dev/null); st="${raw#*) }"; set -- $st; echo "${20:-}" 2>/dev/null )
+    while true; do
+      sudo -n true 2>/dev/null
+      sleep 50
+      kill -0 $$ 2>/dev/null || exit 0
+      _ka_now=$( raw=$(cat "/proc/$$/stat" 2>/dev/null); st="${raw#*) }"; set -- $st; echo "${20:-}" 2>/dev/null )
+      if [[ -n "$_ka_start" && "$_ka_now" != "$_ka_start" ]]; then
+        exit 0
+      fi
+    done ) &
   SUDO_KEEPALIVE_PID=$!
   export SUDO_KEEPALIVE_PID
 }
@@ -162,7 +174,7 @@ stop_sudo_keepalive() {
 if [[ "$DRY_RUN" != true ]] && ! command -v gum >/dev/null 2>&1; then
   # log_to_file needs INSTALL_LOG set; core.sh leaves that to the caller.
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] Installing gum for enhanced UI experience..." >> "$INSTALL_LOG" 2>/dev/null || true
-  if sudo apt-get install -y -qq gum >>"$INSTALL_LOG" 2>&1; then
+  if sudo env NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y -qq gum >>"$INSTALL_LOG" 2>&1; then
     echo "Gum installed successfully" >> "$INSTALL_LOG" 2>/dev/null || true
   else
     echo "Gum not in repos, trying GitHub release..." >> "$INSTALL_LOG" 2>/dev/null || true
@@ -177,9 +189,14 @@ if [[ "$DRY_RUN" != true ]] && ! command -v gum >/dev/null 2>&1; then
     elif command -v wget >/dev/null 2>&1; then
       wget -q -O /tmp/gum.deb "https://github.com/charmbracelet/gum/releases/download/v${GUM_VERSION}/gum_${GUM_VERSION}_${gum_arch}.deb"
     fi
-    if [ -f /tmp/gum.deb ] && sudo dpkg -i /tmp/gum.deb >>"$INSTALL_LOG" 2>&1; then
+    if [ -f /tmp/gum.deb ] && dpkg-deb -I /tmp/gum.deb >/dev/null 2>&1 \
+       && sudo dpkg -i /tmp/gum.deb >>"$INSTALL_LOG" 2>&1; then
       echo "Gum installed from GitHub release" >> "$INSTALL_LOG" 2>/dev/null || true
     else
+      # Dependency-completion path (fedora/debian .deb flows both do this):
+      # without it a failed local .deb install is a one-way state and every
+      # re-run re-downloads the release.
+      sudo env NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -f -y -qq >>"$INSTALL_LOG" 2>&1 || true
       echo "Failed to install gum, falling back to basic UI" >> "$INSTALL_LOG" 2>/dev/null || true
     fi
     rm -f /tmp/gum.deb
@@ -231,8 +248,13 @@ check_system_requirements() {
   # Check disk space
   local available_space
   available_space=$(df / | awk 'NR==2 {print $4}')
-  if [[ $available_space -lt 2097152 ]]; then
-    ui_error "Insufficient disk space! At least 2GB free space is required."
+  # Parse-garbage (empty/non-numeric) must not feed arithmetic with `-lt`.
+  if [[ ! "$available_space" =~ ^[0-9]+$ ]] || [[ "$available_space" -lt 2097152 ]]; then
+    if [[ ! "$available_space" =~ ^[0-9]+$ ]]; then
+      ui_error "Could not determine available disk space (df parse: '${available_space:-<empty>}') — aborting rather than guessing."
+    else
+      ui_error "Insufficient disk space! At least 2GB free space is required."
+    fi
     requirements_failed=true
   fi
 
@@ -405,7 +427,7 @@ cleanup_on_error() {
     ui_info "3. Start fresh installation: rm -f $STATE_FILE"
 
     # Save error state (no bogus line number — step-level FAILED lines are precise)
-    echo "FAILED: Installation ended (exit code: $exit_code)${context:+ — $context}" >> "$STATE_FILE"
+    state_write "FAILED: Installation ended (exit code: $exit_code)${context:+ — $context}"
   fi
 }
 
@@ -567,7 +589,16 @@ if [ "$DRY_RUN" = true ]; then
   exit 0
 fi
 
-state_clear_failures || log_warning "Could not clear stale failure markers from state file"
+# Clear stale failure markers ONLY when the run was actually clean: with the
+# per-step cleanup in place (state_remove_line on success) genuine failures
+# remain visible here. The previous unconditional wipe ran even when steps
+# had failed-continued, so the log's "completed" verdict contradicted the
+# dashboard's "N step(s) failed".
+if state_has_failure || [ ${#ERRORS[@]} -ne 0 ]; then
+  log_warning "Run finished with failures — FAILED markers kept for resume"
+else
+  state_clear_failures || log_warning "Could not clear stale failure markers from state file"
+fi
 
 log_performance "Total installation time"
 
@@ -582,6 +613,18 @@ else
   done
   ui_info "Please check the log file for more details: $INSTALL_LOG"
   ui_info "You can run the installer again to resume from the last successful step."
+fi
+
+# Persistently-named failed packages: these previously went into
+# FAILED_PACKAGES and never surfaced anywhere.
+if [ ${#FAILED_PACKAGES[@]} -gt 0 ]; then
+  ui_warn "Packages that failed to install (not part of the errors above):"
+  for pkg in "${FAILED_PACKAGES[@]}"; do
+    ui_error "  - $pkg"
+  done
+  log_to_file "FAILED_PACKAGES: ${FAILED_PACKAGES[*]}"
+elif [ $QUIET_MODE = false ]; then
+  ui_info "All requested packages installed successfully."
 fi
 
 prompt_reboot

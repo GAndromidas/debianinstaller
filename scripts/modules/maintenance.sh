@@ -13,11 +13,13 @@ cleanup_apt() {
         return 0
     fi
 
-    ui_info "Removing unused packages (autoremove)..."
-    if sudo apt-get autoremove -y -qq >/dev/null 2>&1; then
+    ui_info "Removing unused packages (autoremove --purge)..."
+    local _ar_out=""
+    if _ar_out=$(sudo env NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get autoremove --purge -y -qq 2>&1); then
         ui_success "Unused packages removed."
     else
-        ui_warn "apt autoremove command failed."
+        printf '\n[CLEANUP FAILURE] apt-get autoremove\n%s\n' "$_ar_out" >> "$INSTALL_LOG" 2>/dev/null || true
+        ui_warn "apt autoremove command failed (output logged)."
         # Not adding to ERRORS as this is a non-critical cleanup step.
     fi
 

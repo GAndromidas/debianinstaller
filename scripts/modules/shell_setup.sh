@@ -150,20 +150,35 @@ install_fastfetch() {
     local url="https://github.com/fastfetch-cli/fastfetch/releases/download/${ver}/fastfetch-linux-${arch}.deb"
     local tmp="/tmp/fastfetch.deb"
     if wget -q -O "$tmp" "$url"; then
-        sudo dpkg -i "$tmp" &>/dev/null || sudo apt-get install -f -y -qq
+        if dpkg-deb -I "$tmp" >/dev/null 2>&1 && sudo dpkg -i "$tmp" &>/dev/null; then
+            :
+        else
+            sudo env NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -f -y -qq >/dev/null 2>&1 || true
+        fi
         rm -f "$tmp"
     fi
 }
 # --- Set Default Shell ---
 change_default_shell() {
     local zsh_path
-    zsh_path=$(which zsh)
+    zsh_path=$(command -v zsh)
     if [ -z "$zsh_path" ]; then
         ui_error "Could not find zsh path. Cannot change shell."
         ERRORS+=("ZSH path not found")
         return 1
     fi
-    if [[ "$SHELL" == *"/zsh" ]]; then
+    # Read the passwd-stored login shell: $SHELL reflects the caller's
+    # environment (wrong under sudo/ssh). Also resolve the real invoking
+    # user (SUDO_USER) — $USER may be unset in non-login contexts.
+    local _real_user="${SUDO_USER:-${USER:-}}"
+    if [ -z "$_real_user" ]; then
+        ui_error "Could not determine invoking user name."
+        ERRORS+=("invoking user unresolved")
+        return 1
+    fi
+    local login_shell
+    login_shell=$(getent passwd "$_real_user" 2>/dev/null | cut -d: -f7)
+    if [ "$login_shell" = "$zsh_path" ]; then
         ui_success "Default shell is already ZSH."
         return 0
     fi
@@ -172,7 +187,7 @@ change_default_shell() {
         ui_info "[DRY-RUN] Would change default shell to $zsh_path."
         return 0
     fi
-    if sudo chsh -s "$zsh_path" "$USER"; then
+    if sudo chsh -s "$zsh_path" "$_real_user"; then
         ui_success "Default shell changed to ZSH."
         ui_info "You will need to log out and log back in for the change to take effect."
     else

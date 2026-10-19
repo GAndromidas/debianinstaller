@@ -31,7 +31,7 @@ read_yaml_packages() {
     fi
 
     local yq_output
-    yq_output=$(yq -r "$yaml_path[]" "$yaml_file" 2>/dev/null)
+    yq_output=$(yq -r "$yaml_path"'[]' "$yaml_file" 2>/dev/null)
 
     if [[ $? -eq 0 && -n "$yq_output" ]]; then
         while IFS= read -r pkg; do
@@ -62,7 +62,7 @@ read_yaml_packages_with_desc() {
     fi
 
     local yq_output
-    yq_output=$(yq -r "$yaml_path[] | [.name, .description] | @tsv" "$yaml_file" 2>/dev/null)
+    yq_output=$(yq -r "$yaml_path"'[] | [.name, .description] | @tsv' "$yaml_file" 2>/dev/null)
 
     if [[ $? -eq 0 && -n "$yq_output" ]]; then
         while IFS=$'\t' read -r name description; do
@@ -104,7 +104,9 @@ yaml_key_exists() {
         return 1
     fi
 
-    yq eval "$yaml_path" "$yaml_file" &>/dev/null
+    # "Exists" must not imply "truthy": a valid but empty (`flatpak: []`)
+    # node formerly read as non-existent. Tag kind only.
+    [[ -n "$(yq -r "$yaml_path | tag" "$yaml_file" 2>/dev/null)" ]]
 }
 
 # Get all keys from YAML object

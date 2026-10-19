@@ -217,5 +217,8 @@ setup_distribution_repos
 
 # Flatpak is a desktop-specific feature, so we only run it in that mode.
 if [ "$INSTALL_MODE" = "desktop" ]; then
-    setup_flatpak
+    # Propagate the rc: a failed Flathub setup used to leave this module
+    # exit-0 (the branch's status), so the step was marked complete with
+    # Flathub silently missing.
+    setup_flatpak || return 1
 fi

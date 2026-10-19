@@ -109,7 +109,6 @@ Transform your system into a gaming powerhouse with one click (Desktop mode only
 - MangoHud performance overlay
 - GameMode for automatic performance tuning
 - Discord for gaming communication
-- Wine for Windows gaming compatibility
 - ProtonPlus for Proton-GE management
 
 ---
@@ -329,7 +328,6 @@ After completion, the dashboard displays a full summary:
 | **GameMode** | Repository | Performance optimization |
 | **MangoHud** | Repository | FPS overlay |
 | **Discord** | Direct Download | Gaming communication |
-| **Wine** | Repository | Windows compatibility |
 | **ProtonPlus** | Flatpak | Proton-GE management |
 
 ### Performance Features
@@ -337,7 +335,6 @@ After completion, the dashboard displays a full summary:
 - **GameMode**: Automatic CPU/GPU optimization during gaming
 - **MangoHud**: Real-time FPS, temperature, and system stats overlay
 - **Vulkan Tools**: Graphics API utilities and diagnostics
-- **Wine Integration**: Windows game compatibility with optimized configuration
 
 ---
 

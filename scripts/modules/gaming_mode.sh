@@ -57,9 +57,13 @@ install_flatpak_packages() {
         return
     fi
 
-    if ! sudo flatpak remote-list | grep -q flathub; then
-        step "Adding Flathub remote"
-        sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    if ! sudo flatpak remote-list 2>/dev/null | grep -q flathub; then
+        if [ "$DRY_RUN" = true ]; then
+            ui_info "[DRY-RUN] Would add the Flathub remote."
+        else
+            step "Adding Flathub remote"
+            sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+        fi
     fi
 
     if [[ ${#flatpak_gaming_packages[@]} -eq 0 ]]; then
@@ -68,6 +72,7 @@ install_flatpak_packages() {
     fi
     ui_info "Installing ${#flatpak_gaming_packages[@]} Flatpak applications for gaming..."
 
+    local g_install=()
     for pkg in "${flatpak_gaming_packages[@]}"; do
         if [ "$DRY_RUN" = true ]; then
             ui_info "[DRY-RUN] Would install Flatpak: $pkg"
@@ -79,15 +84,29 @@ install_flatpak_packages() {
             ui_info "Discord already installed via .deb — skipping Flatpak duplicate."
             continue
         fi
-        ui_info "Installing Flatpak: $pkg..."
-        if sudo flatpak install -y flathub "$pkg" >/dev/null 2>&1; then
-            ui_success "Flatpak $pkg installed successfully."
-            GAMING_INSTALLED+=("$pkg (Flatpak)")
-        else
-            ui_error "Failed to install Flatpak: $pkg"
-            GAMING_ERRORS+=("$pkg (Flatpak)")
-        fi
+        g_install+=("$pkg")
     done
+    if [ ${#g_install[@]} -gt 0 ]; then
+        local _g_out="" _ok_pkgs=()
+        if _g_out=$(sudo flatpak install -y flathub "${g_install[@]}" 2>&1); then
+            for pkg in "${g_install[@]}"; do GAMING_INSTALLED+=("$pkg (Flatpak)"); done
+            ui_success "Gaming Flatpaks installed successfully (batch)."
+            return
+        fi
+        printf '\n[BATCH FAILURE] flatpak install (gaming)\n%s\n' "$_g_out" >> "$INSTALL_LOG" 2>/dev/null || true
+        ui_warn "Batch Flatpak install failed - falling back per-app"
+        for pkg in "${g_install[@]}"; do
+            # The batch may have partially succeeded; probe per app.
+            if sudo flatpak list --app 2>/dev/null | grep -qx "$pkg/none" || \
+               sudo flatpak install -y flathub "$pkg" >/dev/null 2>&1; then
+                ui_success "Flatpak $pkg installed successfully."
+                GAMING_INSTALLED+=("$pkg (Flatpak)")
+            else
+                ui_error "Failed to install Flatpak: $pkg"
+                GAMING_ERRORS+=("$pkg (Flatpak)")
+            fi
+        done
+    fi
 }
 
 install_discord() {
@@ -117,11 +136,25 @@ install_discord() {
         return 1
     fi
 
+    # Validate the artifact BEFORE installing: a 5xx/HTML error page saved
+    # as .deb previously dpkg-failed silently, then `apt-get -f` succeeded
+    # (nothing broken) and the file counted as installed.
+    if ! dpkg-deb -I "$discord_deb" >/dev/null 2>&1; then
+        ui_error "Downloaded Discord artifact is not a valid .deb package (skipped)."
+        GAMING_ERRORS+=("Discord download invalid")
+        rm -f "$discord_deb"
+        return 1
+    fi
     ui_info "Installing Discord package..."
     sudo dpkg -i "$discord_deb" &>/dev/null || true
-    if sudo apt-get install -f -y -qq; then
-        ui_success "Discord installed successfully."
-        GAMING_INSTALLED+=("discord")
+    if sudo env NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -f -y -qq >/dev/null 2>&1; then
+        if dpkg-query -W -f='${Status}' "discord" 2>/dev/null | grep -q "ok installed"; then
+            ui_success "Discord installed successfully."
+            GAMING_INSTALLED+=("discord")
+        else
+            ui_error "apt-get -f succeeded but Discord is not installed - check the manual download."
+            GAMING_ERRORS+=("Discord .deb install")
+        fi
     else
         ui_error "Failed to install Discord from .deb package."
         GAMING_ERRORS+=("Discord .deb install")
@@ -160,7 +193,7 @@ configure_mangohud() {
 step "Gaming Mode Setup"
 simple_banner "Gaming Mode"
 
-ui_info "Installing gaming packages and optimizations (Discord, Steam, Wine, GameMode, MangoHud, Heroic Games Launcher)..."
+ui_info "Installing gaming packages and optimizations (Discord, Steam, GameMode, MangoHud, Heroic Games Launcher)..."
 
 if ! load_package_lists; then
     return 1

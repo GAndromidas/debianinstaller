@@ -26,7 +26,8 @@ if [ -z "${DEBIAN_INSTALLER_LIBS_LOADED:-}" ]; then
 fi
 
 # ============================================================================
-# Show Menu with gum support (legacy compat, duplicates lib/ui.sh for safety)
+# Show Menu — the single menu implementation lives HERE (lib/ui.sh defines
+# no menu functions; the earlier "duplicates lib/ui.sh" claim was wrong).
 # ============================================================================
 if ! declare -f show_menu >/dev/null 2>&1; then
 show_menu() {
@@ -53,11 +54,12 @@ show_gum_menu() {
   gum style --margin "1 0" --foreground "$GUM_WARN" "This script will transform your fresh Debian-based installation into a"
   gum style --margin "0 0 1 0" --foreground "$GUM_WARN" "fully configured, optimized system with all the tools you need!"
 
-  local choice=$(gum choose --cursor="-> " --selected.foreground "$GUM_PRIMARY" --cursor.foreground "$GUM_PRIMARY" \
+  local choice
+  choice=$(gum choose --cursor="-> " --selected.foreground "$GUM_PRIMARY" --cursor.foreground "$GUM_PRIMARY" \
     "Desktop (Gaming) - Full desktop setup with gaming mode (recommended)" \
     "Desktop (No Gaming) - Full desktop setup without gaming mode" \
     "Server  - Minimal server setup (Docker, SSH, etc.)" \
-    "Exit - Cancel installation")
+    "Exit - Cancel installation" </dev/tty 2>/dev/tty)
 
   case "$choice" in
     "Desktop (Gaming)"*)
@@ -94,14 +96,15 @@ show_traditional_menu() {
   echo ""
   echo -e "${THEME_HEADER}Choose your installation mode:${RESET}"
   echo ""
-  printf "  1) Desktop (Gaming)%s- Full desktop setup with gaming mode (recommended)\n" ""
+  printf "  1) Desktop (Gaming) - Full desktop setup with gaming mode (recommended)\n"
   printf "  2) Desktop (No Gaming) - Full desktop setup without gaming mode\n"
-  printf "  3) Server%s- Minimal server setup (Docker, SSH, etc.)\n" ""
-  printf "  4) Exit%s- Cancel installation\n" ""
+  printf "  3) Server - Minimal server setup (Docker, SSH, etc.)\n"
+  printf "  4) Exit - Cancel installation\n"
   echo ""
 
   while true; do
-    read -r -p "$(echo -e "${THEME_SECONDARY}Enter your choice [1-4]: ${RESET}")" menu_choice
+    read -r -p "$(echo -e "${THEME_SECONDARY}Enter your choice [1-4]: ${RESET}")" menu_choice \
+      || { echo -e "${THEME_WARN}\nInput stream closed — cannot continue without a mode.\n"; exit 1; }
     case "$menu_choice" in
       1)
         INSTALL_MODE="desktop"
@@ -171,7 +174,8 @@ prompt_reboot() {
     fi
   else
     while true; do
-      read -r -p "$(echo -e "${THEME_WARN}Reboot now? [Y/n]: ${RESET}")" reboot_ans
+      read -r -p "$(echo -e "${THEME_WARN}Reboot now? [Y/n]: ${RESET}")" reboot_ans \
+        || { echo -e "${THEME_WARN}\nInput stream closed — rebooting skipped. Use: sudo reboot\n"; break; }
       reboot_ans=${reboot_ans,,}
       case "$reboot_ans" in
         ""|y|yes)

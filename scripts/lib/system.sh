@@ -18,23 +18,19 @@ IS_ZORIN=false
 IS_POP_OS=false
 
 is_headless_system() {
-  if systemctl is-active --quiet gdm 2>/dev/null || \
-     systemctl is-active --quiet sddm 2>/dev/null || \
-     systemctl is-active --quiet lightdm 2>/dev/null || \
-     systemctl is-active --quiet lxdm 2>/dev/null || \
-     systemctl is-active --quiet slim 2>/dev/null; then
-    return 1
-  fi
-  if pgrep -x X >/dev/null 2>&1 || pgrep -x Xorg >/dev/null 2>&1; then
-    return 1
-  fi
-  if pgrep -x weston >/dev/null 2>&1 || pgrep -x gnome-shell >/dev/null 2>&1; then
-    return 1
-  fi
-  if [[ -n "${XDG_CURRENT_DESKTOP:-}" ]]; then
-    return 1
-  fi
-  return 0
+    # ONE call: multi-unit is-active prints one status per unit, and a
+    # grep over a single active-service list catches every display manager
+    # plus Xorg/Wayland compositors — replaces 9 sequential probes.
+    if systemctl is-active gdm sddm lightdm lxdm slim 2>/dev/null | grep -qi '^active'; then
+        return 1
+    fi
+    if ps -eo comm= 2>/dev/null | grep -qx 'X\|Xorg\|weston\|gnome-shell'; then
+        return 1
+    fi
+    if [[ -n "${XDG_CURRENT_DESKTOP:-}" ]]; then
+        return 1
+    fi
+    return 0
 }
 
 detect_distribution() {

@@ -17,9 +17,18 @@ DASHBOARD_STEP_START=0
 DASHBOARD_FRAME_END=0
 DASHBOARD_ROW_OFFSET=0
 
+# Terminal-only TUI: when stdout isn't a TTY the frame/cursor writes would
+# spray tput escapes into a redirected stream. Drawing degrades to no-ops;
+# state tracking (statuses/timings) still works.
+DASH_DRAW=1
+[[ ! -t 1 ]] && DASH_DRAW=0
+_dash_tput()   { if (( DASH_DRAW )); then "$@"; fi; }
+_dash_printf() { if (( DASH_DRAW )); then printf "$@"; fi; }
+_dash_clear()  { if (( DASH_DRAW )); then clear; fi; }
+
 dashboard_init() {
-    clear
-    DASHBOARD_START_TIME=$(date +%s)
+    _dash_clear
+    DASHBOARD_START_TIME=${EPOCHSECONDS:-0}
     DASHBOARD_STEP_TIMES=()
     DASHBOARD_STEP_NAMES=()
     DASHBOARD_STEP_STATUSES=()
@@ -45,7 +54,7 @@ dashboard_init() {
     local step_info="Step 1/${total}"
     local title_pad=$((w - ${#title} - ${#step_info} - 3))
     (( title_pad < 1 )) && title_pad=1
-    printf "${THEME_BORDER}  │${RESET} ${THEME_HEADER}%s${RESET}%*s ${THEME_MUTED}%s${RESET} ${THEME_BORDER}│${RESET}\n" \
+    _dash_printf "${THEME_BORDER}  │${RESET} ${THEME_HEADER}%s${RESET}%*s ${THEME_MUTED}%s${RESET} ${THEME_BORDER}│${RESET}\n" \
         "$title" $title_pad "" "$step_info"
     row=2
 
@@ -64,7 +73,7 @@ dashboard_init() {
     local name_w=$((w - 10))
     for ((i = 1; i <= total; i++)); do
         DASHBOARD_STEP_ROWS[$i]=$row
-        printf "${THEME_BORDER}  │${RESET}  %2d  ○ %-${name_w}s  ${THEME_BORDER}│${RESET}\n" \
+        _dash_printf "${THEME_BORDER}  │${RESET}  %2d  ○ %-${name_w}s  ${THEME_BORDER}│${RESET}\n" \
             "$i" "Pending"
         ((row++))
     done
@@ -78,7 +87,7 @@ dashboard_init() {
     local cancel_info="Ctrl+C to cancel"
     local info_pad=$((w - ${#log_info} - ${#cancel_info} - 3))
     (( info_pad < 1 )) && info_pad=1
-    printf "${THEME_BORDER}  │${RESET} ${THEME_MUTED}%s${RESET}%*s ${THEME_MUTED}%s${RESET} ${THEME_BORDER}│${RESET}\n" \
+    _dash_printf "${THEME_BORDER}  │${RESET} ${THEME_MUTED}%s${RESET}%*s ${THEME_MUTED}%s${RESET} ${THEME_BORDER}│${RESET}\n" \
         "$log_info" $info_pad "" "$cancel_info"
     ((row++))
 
@@ -86,7 +95,7 @@ dashboard_init() {
     echo -e "${THEME_BORDER}  └$(printf '─%.0s' $(seq 1 $w))┘${RESET}"
     DASHBOARD_FRAME_END=$row
 
-    tput cup $((DASHBOARD_ROW_OFFSET + DASHBOARD_FRAME_END + 1)) 0
+    _dash_tput tput cup $((DASHBOARD_ROW_OFFSET + DASHBOARD_FRAME_END + 1)) 0
 }
 
 dashboard_step() {
@@ -117,43 +126,45 @@ dashboard_step() {
     local step_info="Step ${num}/${total}"
     local title_pad=$((w - ${#title} - ${#step_info} - 3))
     (( title_pad < 1 )) && title_pad=1
-    tput cup $((DASHBOARD_ROW_OFFSET + 1)) 0
-    tput el
-    printf "${THEME_BORDER}  │${RESET} ${THEME_HEADER}%s${RESET}%*s ${THEME_MUTED}%s${RESET} ${THEME_BORDER}│${RESET}" \
+    _dash_tput tput cup $((DASHBOARD_ROW_OFFSET + 1)) 0
+    _dash_tput tput el
+    _dash_printf "${THEME_BORDER}  │${RESET} ${THEME_HEADER}%s${RESET}%*s ${THEME_MUTED}%s${RESET} ${THEME_BORDER}│${RESET}" \
         "$title" $title_pad "" "$step_info"
 
     local name_w=$((w - 11 - bar_w))
     (( name_w < 1 )) && name_w=1
     local disp_name="$name"
     (( ${#disp_name} > name_w )) && disp_name="${disp_name:0:$((name_w-1))}…"
-    tput cup $((DASHBOARD_ROW_OFFSET + 3)) 0
-    tput el
-    printf "${THEME_BORDER}  │${RESET}  ${THEME_SUCCESS}%s${RESET}  ${THEME_TEXT}%-*s${RESET} %3d%%${RESET}  ${THEME_BORDER}│${RESET}" \
+    _dash_tput tput cup $((DASHBOARD_ROW_OFFSET + 3)) 0
+    _dash_tput tput el
+    _dash_printf "${THEME_BORDER}  │${RESET}  ${THEME_SUCCESS}%s${RESET}  ${THEME_TEXT}%-*s${RESET} %3d%%${RESET}  ${THEME_BORDER}│${RESET}" \
         "$bar" $name_w "$disp_name" $pct
 
     local name_w2=$((w - 10))
     local step_row="${DASHBOARD_STEP_ROWS[$num]}"
-    tput cup $((DASHBOARD_ROW_OFFSET + step_row)) 0
-    tput el
-    printf "${THEME_BORDER}  │${RESET}  %2d  ● %-${name_w2}s  ${THEME_BORDER}│${RESET}" \
+    _dash_tput tput cup $((DASHBOARD_ROW_OFFSET + step_row)) 0
+    _dash_tput tput el
+    _dash_printf "${THEME_BORDER}  │${RESET}  %2d  ● %-${name_w2}s  ${THEME_BORDER}│${RESET}" \
         "$num" "Running..."
 
-    tput cup $((DASHBOARD_ROW_OFFSET + DASHBOARD_FRAME_END + 1)) 0
+    _dash_tput tput cup $((DASHBOARD_ROW_OFFSET + DASHBOARD_FRAME_END + 1)) 0
 
-    DASHBOARD_STEP_START=$(date +%s)
+    DASHBOARD_STEP_START=${EPOCHSECONDS:-0}
 }
 
 dashboard_run() {
     local script_path=$1
 
-    source "$script_path" >> "$INSTALL_LOG"
+    # stdout AND stderr go to the log: stderr previously stayed on the
+    # terminal, so apt/git failures inside modules left no trace in the log.
+    source "$script_path" >> "$INSTALL_LOG" 2>> "$INSTALL_LOG"
     local ret=$?
     return $ret
 }
 
 dashboard_ok() {
     local elapsed=0
-    [ "$DASHBOARD_STEP_START" -gt 0 ] && elapsed=$(($(date +%s) - DASHBOARD_STEP_START))
+    [ "$DASHBOARD_STEP_START" -gt 0 ] && elapsed=$(( ${EPOCHSECONDS:-0} - DASHBOARD_STEP_START ))
     local num=$DASHBOARD_CURRENT_STEP
     local w=$DASHBOARD_INNER_W
     DASHBOARD_STEP_STATUSES[$num]="ok"
@@ -164,17 +175,17 @@ dashboard_ok() {
     local name="${DASHBOARD_STEP_NAMES[$num]}"
 
     local name_w=$((w - 17))
-    tput cup $((DASHBOARD_ROW_OFFSET + step_row)) 0
-    tput el
-    printf "${THEME_BORDER}  │${RESET}  %2d  ${THEME_SUCCESS}✓${RESET} %-${name_w}s ${THEME_MUTED}%6s${RESET}  ${THEME_BORDER}│${RESET}" \
+    _dash_tput tput cup $((DASHBOARD_ROW_OFFSET + step_row)) 0
+    _dash_tput tput el
+    _dash_printf "${THEME_BORDER}  │${RESET}  %2d  ${THEME_SUCCESS}✓${RESET} %-${name_w}s ${THEME_MUTED}%6s${RESET}  ${THEME_BORDER}│${RESET}" \
         "$num" "$name" "$time_str"
 
-    tput cup $((DASHBOARD_ROW_OFFSET + DASHBOARD_FRAME_END + 1)) 0
+    _dash_tput tput cup $((DASHBOARD_ROW_OFFSET + DASHBOARD_FRAME_END + 1)) 0
 }
 
 dashboard_fail() {
     local elapsed=0
-    [ "$DASHBOARD_STEP_START" -gt 0 ] && elapsed=$(($(date +%s) - DASHBOARD_STEP_START))
+    [ "$DASHBOARD_STEP_START" -gt 0 ] && elapsed=$(( ${EPOCHSECONDS:-0} - DASHBOARD_STEP_START ))
     local num=$DASHBOARD_CURRENT_STEP
     local w=$DASHBOARD_INNER_W
     DASHBOARD_STEP_STATUSES[$num]="fail"
@@ -185,12 +196,12 @@ dashboard_fail() {
     local name="${DASHBOARD_STEP_NAMES[$num]}"
 
     local name_w=$((w - 17))
-    tput cup $((DASHBOARD_ROW_OFFSET + step_row)) 0
-    tput el
-    printf "${THEME_BORDER}  │${RESET}  %2d  ${THEME_ERROR}✗${RESET} %-${name_w}s ${THEME_MUTED}%6s${RESET}  ${THEME_BORDER}│${RESET}" \
+    _dash_tput tput cup $((DASHBOARD_ROW_OFFSET + step_row)) 0
+    _dash_tput tput el
+    _dash_printf "${THEME_BORDER}  │${RESET}  %2d  ${THEME_ERROR}✗${RESET} %-${name_w}s ${THEME_MUTED}%6s${RESET}  ${THEME_BORDER}│${RESET}" \
         "$num" "$name" "$time_str"
 
-    tput cup $((DASHBOARD_ROW_OFFSET + DASHBOARD_FRAME_END + 1)) 0
+    _dash_tput tput cup $((DASHBOARD_ROW_OFFSET + DASHBOARD_FRAME_END + 1)) 0
 }
 
 dashboard_skip() {
@@ -206,16 +217,16 @@ dashboard_skip() {
     local disp_msg="$msg"
     (( ${#disp_msg} > name_w )) && disp_msg="${disp_msg:0:$((name_w-1))}…"
 
-    tput cup $((DASHBOARD_ROW_OFFSET + step_row)) 0
-    tput el
-    printf "${THEME_BORDER}  │${RESET}  %2d  ${THEME_MUTED}◇${RESET} %-${name_w}s  ${THEME_BORDER}│${RESET}" \
+    _dash_tput tput cup $((DASHBOARD_ROW_OFFSET + step_row)) 0
+    _dash_tput tput el
+    _dash_printf "${THEME_BORDER}  │${RESET}  %2d  ${THEME_MUTED}◇${RESET} %-${name_w}s  ${THEME_BORDER}│${RESET}" \
         "$num" "$disp_msg"
 
-    tput cup $((DASHBOARD_ROW_OFFSET + DASHBOARD_FRAME_END + 1)) 0
+    _dash_tput tput cup $((DASHBOARD_ROW_OFFSET + DASHBOARD_FRAME_END + 1)) 0
 }
 
 dashboard_finish() {
-    clear
+    _dash_clear
 
     local total=${TOTAL_STEPS:-9}
     local success=0 fail=0 skip=0
@@ -229,7 +240,7 @@ dashboard_finish() {
         esac
     done
 
-    local wall_time=$(( $(date +%s) - DASHBOARD_START_TIME ))
+    local wall_time=$(( ${EPOCHSECONDS:-0} - DASHBOARD_START_TIME ))
     local cols
     cols=$(tput cols 2>/dev/null || echo 80)
     local w=$((cols - 4))
@@ -246,7 +257,7 @@ dashboard_finish() {
     echo -e "${THEME_BORDER}  ╔$(printf '═%.0s' $(seq 1 $w))╗${RESET}"
     local title_pad=$(( (w - ${#title}) / 2 ))
     (( title_pad < 1 )) && title_pad=1
-    printf "${THEME_BORDER}  ║${RESET}%*s${THEME_HEADER}%s${RESET}%*s${THEME_BORDER}║${RESET}\n" \
+    _dash_printf "${THEME_BORDER}  ║${RESET}%*s${THEME_HEADER}%s${RESET}%*s${THEME_BORDER}║${RESET}\n" \
         $title_pad '' "$title" $((w - title_pad - ${#title})) ''
     echo -e "${THEME_BORDER}  ╚$(printf '═%.0s' $(seq 1 $w))╝${RESET}"
     echo ""
